@@ -1,0 +1,6 @@
+{
+  "name": "mock-console",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Quarantined mock target app — no imports from ../src ever"
+}
