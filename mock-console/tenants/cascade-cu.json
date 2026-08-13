@@ -5,13 +5,20 @@
   "themeBg": "#f4f0e8",
   "labels": {
     "memberNumber": "Member Number",
-    "search": "Search",
+    "search": "Member Search",
     "memberDetails": "Member Details",
     "accountNumber": "Account #",
     "accountType": "Type",
     "accountBalance": "Balance",
+    "shareId": "Share ID",
     "openSubAccount": "Open Sub-Account",
     "signIn": "Sign In",
-    "operatorConsole": "Operator Console"
+    "operatorConsole": "Operator Console",
+    "dashboard": "Dashboard",
+    "transferFunds": "Transfer Funds",
+    "transactions": "Transaction History",
+    "reports": "Reports",
+    "settings": "Settings",
+    "auditLog": "Audit Log"
   }
 }
