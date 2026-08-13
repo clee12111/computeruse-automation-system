@@ -1,0 +1,17 @@
+{
+  "id": "cascade-cu",
+  "name": "Cascade Credit Union",
+  "themeColor": "#1a4d2e",
+  "themeBg": "#f4f0e8",
+  "labels": {
+    "memberNumber": "Member Number",
+    "search": "Search",
+    "memberDetails": "Member Details",
+    "accountNumber": "Account #",
+    "accountType": "Type",
+    "accountBalance": "Balance",
+    "openSubAccount": "Open Sub-Account",
+    "signIn": "Sign In",
+    "operatorConsole": "Operator Console"
+  }
+}

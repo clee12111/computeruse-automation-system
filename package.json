@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "cli": "tsx src/cli/index.ts",
+    "mock": "node mock-console/server.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
