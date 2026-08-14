@@ -3,6 +3,28 @@
   "name": "Cascade Credit Union",
   "themeColor": "#1a4d2e",
   "themeBg": "#f4f0e8",
+  "tellerLimits": { "withdrawalOverride": 2500 },
+  "rates": {
+    "shares": [
+      ["Regular Savings", "0.45% APY"], ["Checking", "0.01% APY"],
+      ["Money Market", "1.75% APY"], ["Holiday Club", "0.25% APY"]
+    ],
+    "certificates": [
+      ["6-Month CD", "3.50% APY"], ["12-Month CD", "3.85% APY"],
+      ["24-Month CD", "4.10% APY"], ["36-Month CD", "4.25% APY"]
+    ],
+    "loans": [
+      ["Auto Loan (New)", "4.75%"], ["Auto Loan (Used)", "5.25%"],
+      ["Personal Loan", "8.50%"], ["Mortgage (30yr)", "6.25%"],
+      ["Home Equity", "7.50%"], ["Credit Builder", "12.00%"]
+    ],
+    "perDiem": 0.000205
+  },
+  "quickJumpCodes": {
+    "INQ": "/search", "PO": "/phone-op", "TL": "/teller/line",
+    "XFER": "/search", "DRAW": "/teller/drawer", "DELINQ": "/lending/delinquency",
+    "EOD": "/eod-summary", "RATES": "/rate-board"
+  },
   "labels": {
     "memberNumber": "Member Number",
     "lastName": "Last Name",
@@ -49,6 +71,35 @@
     "loanDetails": "Loan Details",
     "makePayment": "Make Payment",
     "updateContact": "Update Contact Info",
-    "memberNotes": "Member Notes"
+    "memberNotes": "Member Notes",
+    "memberServices": "MEMBER SERVICES",
+    "teller": "TELLER",
+    "lending": "LENDING",
+    "operations": "OPERATIONS",
+    "newMembership": "New Membership",
+    "trackers": "Trackers",
+    "tellerLine": "Teller Line",
+    "drawer": "Drawer",
+    "miscReceipts": "Misc Receipts",
+    "loanSearch": "Loan Search",
+    "applications": "Applications",
+    "delinquency": "Delinquency",
+    "eodSummary": "EOD Summary",
+    "rateBoard": "Rate Board",
+    "codeWord": "Code Word",
+    "deposit": "Deposit",
+    "withdrawal": "Withdrawal",
+    "fundsType": "Funds Type",
+    "supervisorOverride": "Supervisor Override Required",
+    "receipt": "Receipt",
+    "phoneOperator": "Phone Operator",
+    "stopPayment": "Stop Payment",
+    "checkDisbursement": "Check Disbursement",
+    "payoffQuote": "Payoff Quote",
+    "secondaryNames": "Joint Owners / Secondary Names",
+    "openCertificate": "Open Certificate",
+    "closeAccount": "Close Account",
+    "wireTransfer": "Wire Transfer",
+    "loanApplication": "Loan Application"
   }
 }
