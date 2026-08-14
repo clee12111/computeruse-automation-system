@@ -1,5 +1,5 @@
 {
-  "allowedOrigins": [],
-  "allowedRoutes": [],
-  "allowedVerbs": []
+  "allowedOrigins": ["http://localhost:3000"],
+  "allowedRoutes": ["/t/*"],
+  "allowedVerbs": ["click", "type", "select", "read", "navigate"]
 }

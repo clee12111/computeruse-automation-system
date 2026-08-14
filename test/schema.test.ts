@@ -5,6 +5,9 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const Ajv = require('ajv') as new (opts?: Record<string, unknown>) => { compile: (schema: unknown) => (data: unknown) => boolean; errors?: unknown[] };
 import { CapabilityArtifactSchema } from '../src/schema/artifact.js';
 import { ReplayResultSchema, InterventionRequestSchema } from '../src/schema/results.js';
 import { loadArtifact, ArtifactValidationError } from '../src/schema/loader.js';
@@ -74,6 +77,17 @@ describe('schema validation', () => {
     expect(content.$schema).toContain('json-schema.org');
     expect(content.title).toBe('CapabilityArtifact');
     expect(content.properties.steps).toBeDefined();
+  });
+
+  it('JSON Schema drift guard: draft validates against exported schema', () => {
+    const schemaPath = resolve(__dirname, '../src/schema/artifact.schema.json');
+    const ajv = new Ajv({ strict: false });
+    const jsonSchema = JSON.parse(readFileSync(schemaPath, 'utf8'));
+    const validate = ajv.compile(jsonSchema);
+    const draft = loadFixture();
+    const valid = validate(draft);
+    if (!valid) console.error('AJV errors:', ajv.errors);
+    expect(valid).toBe(true);
   });
 
   // ── Mutation tests ──────────────────────────────────────

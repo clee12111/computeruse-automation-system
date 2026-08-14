@@ -18,7 +18,7 @@ const valueBindingSchema = {
 };
 
 const schema = {
-  $schema: 'https://json-schema.org/draft-07/schema#',
+  $schema: 'http://json-schema.org/draft-07/schema#',
   title: 'CapabilityArtifact',
   type: 'object' as const,
   required: ['name', 'version', 'app', 'inputs', 'outputs', 'businessOutcomes', 'steps'],
