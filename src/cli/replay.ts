@@ -19,8 +19,10 @@ export async function runReplay(args: string[]): Promise<void> {
 
   const flags = new Map<string, string>();
   let headed = false;
+  let attended = false;
   for (let i = 1; i < args.length; i++) {
     if (args[i] === '--headed') { headed = true; continue; }
+    if (args[i] === '--attended') { attended = true; headed = true; continue; }
     if (args[i].startsWith('--') && i + 1 < args.length) {
       flags.set(args[i].slice(2), args[i + 1]);
       i++;
@@ -83,7 +85,14 @@ export async function runReplay(args: string[]): Promise<void> {
 
   try {
     await surface.launch();
-    const result = await replay({ surface, artifact, inputs, journal, stepTimeoutMs: 30000, tickMs: 250 });
+    // Escalation channel for attended mode
+    let channel: import('../escalation/intervention.js').EscalationChannel | undefined;
+    if (attended) {
+      const { TerminalChannel } = await import('../escalation/intervention.js');
+      channel = new TerminalChannel();
+    }
+
+    const result = await replay({ surface, artifact, inputs, journal, stepTimeoutMs: 30000, tickMs: 250, attended, channel });
 
     // Add sensitive output values to redactor before writing result
     if (result.status === 'SUCCESS') {

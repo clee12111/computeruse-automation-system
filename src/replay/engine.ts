@@ -3,9 +3,12 @@
 // No LLM anywhere. Replay never waits for time, it waits for truth.
 
 import type { CapabilityArtifact, Predicate, Step, ConditionHandler } from '../schema/artifact.js';
-import type { ReplayResult } from '../schema/results.js';
+import type { ReplayResult, InterventionRequest } from '../schema/results.js';
 import type { Surface, ResolveResult } from '../surface/surface.js';
 import type { RunJournal } from '../evidence/journal.js';
+import type { EscalationChannel, HandbackClaim } from '../escalation/intervention.js';
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 export class InvalidInputError extends Error {
   constructor(message: string) {
@@ -21,6 +24,8 @@ export interface EngineConfig {
   journal: RunJournal;
   stepTimeoutMs?: number;  // default 30000
   tickMs?: number;         // default 250
+  attended?: boolean;       // attended mode: escalate instead of hard-fail
+  channel?: EscalationChannel; // the escalation channel (required if attended)
 }
 
 // ── Pre-flight: validate inputs BEFORE launching browser ────
@@ -121,6 +126,10 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
   }
 
   for (const step of artifact.steps) {
+    // Retry loop for attended escalation
+    let stepRetry = true;
+    while (stepRetry) {
+    stepRetry = false;
     journal.stepStart(step.id, step.intent);
 
     // ── RESOLVE or NAVIGATE ─────────────────────────────
@@ -133,7 +142,7 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
       const navResult = await surface.navigate(path);
       if (!navResult.ok) {
         const ss = await captureFailure(surface, journal);
-        return hardFailure(step, 'Navigation failed: ' + (navResult.error ?? 'blocked'), ss);
+        { const _esc = await escalateOrFail(step, 'Navigation failed: ' + (navResult.error ?? 'blocked'), ss, config, outputs); if (_esc.action === "retry") { stepRetry = true; break; } if (_esc.action === "skip") break; return _esc.result; }
       }
     } else {
       // Poll for target resolution
@@ -148,7 +157,7 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
 
       if (!resolveResult || resolveResult.kind !== 'match') {
         const ss = await captureFailure(surface, journal);
-        return hardFailure(step, 'Target not resolved', ss, resolveResult);
+        { const _esc = await escalateOrFail(step, 'Target not resolved', ss, config, outputs, resolveResult); if (_esc.action === "retry") { stepRetry = true; break; } if (_esc.action === "skip") break; return _esc.result; }
       }
 
       journal.rungMatched(step.id, resolveResult.rungIndex);
@@ -168,10 +177,10 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
       if (!actResult.ok) {
         if (actResult.blocked) {
           const ss = await captureFailure(surface, journal);
-          return hardFailure(step, `Policy blocked: ${actResult.blocked.rule} (${actResult.blocked.attempted})`, ss);
+          { const _esc = await escalateOrFail(step, `Policy blocked: ${actResult.blocked.rule} (${actResult.blocked.attempted})`, ss, config, outputs); if (_esc.action === "retry") { stepRetry = true; break; } if (_esc.action === "skip") break; return _esc.result; }
         }
         const ss = await captureFailure(surface, journal);
-        return hardFailure(step, 'Action failed: ' + (actResult.error ?? 'unknown'), ss);
+        { const _esc = await escalateOrFail(step, 'Action failed: ' + (actResult.error ?? 'unknown'), ss, config, outputs); if (_esc.action === "retry") { stepRetry = true; break; } if (_esc.action === "skip") break; return _esc.result; }
       }
 
       journal.event('acted', { stepId: step.id, verb: step.action.verb });
@@ -181,7 +190,7 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
         const parsed = parseValue(actResult.readValue, step.action.parseAs ?? 'string');
         if (parsed == null) {
           const ss = await captureFailure(surface, journal);
-          return hardFailure(step, `Parse failed (${step.action.parseAs}): raw="${actResult.readValue}"`, ss);
+          { const _esc = await escalateOrFail(step, `Parse failed (${step.action.parseAs}): raw="${actResult.readValue}"`, ss, config, outputs); if (_esc.action === "retry") { stepRetry = true; break; } if (_esc.action === "skip") break; return _esc.result; }
         }
         outputs[step.action.saveTo!] = parsed;
         journal.event('output_parsed', { stepId: step.id, key: step.action.saveTo!, parseAs: step.action.parseAs });
@@ -232,7 +241,7 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
               if (step.risk === 'risky' && step.action.verb === 'click') {
                 journal.event('reanchor_refused_risky', { stepId: step.id });
                 const ss = await captureFailure(surface, journal);
-                return hardFailure(step, 'Reanchor refused: risky click after condition handler', ss);
+                { const _esc = await escalateOrFail(step, 'Reanchor refused: risky click after condition handler', ss, config, outputs); if (_esc.action === "retry") { stepRetry = true; break; } if (_esc.action === "skip") break; return _esc.result; }
               }
               journal.event('reanchor_reattempt', { stepId: step.id, verb: step.action.verb });
               const reResolve = await surface.resolve(step.target.chain);
@@ -260,7 +269,7 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
         for (let i = 0; i < step.onCondition.length; i++) {
           if (applies[i] <= 0 && await surface.check(step.onCondition[i].if)) {
             const ss = await captureFailure(surface, journal);
-            return hardFailure(step, `Condition handler exhausted (maxApplies spent) but condition persists`, ss);
+            { const _esc = await escalateOrFail(step, `Condition handler exhausted (maxApplies spent) but condition persists`, ss, config, outputs); if (_esc.action === "retry") { stepRetry = true; break; } if (_esc.action === "skip") break; return _esc.result; }
           }
         }
       }
@@ -285,10 +294,11 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
       // Check timeout
       if (Date.now() - arbStart >= stepTimeout) {
         const ss = await captureFailure(surface, journal);
-        return hardFailure(step, `Arbitration timeout (${stepTimeout}ms)`, ss);
+        { const _esc = await escalateOrFail(step, `Arbitration timeout (${stepTimeout}ms)`, ss, config, outputs); if (_esc.action === "retry") { stepRetry = true; break; } if (_esc.action === "skip") break; return _esc.result; }
       }
     }
-  }
+    } // end while(stepRetry)
+  } // end for(step)
 
   // All steps completed → SUCCESS
   return { status: 'SUCCESS', outputs };
@@ -303,19 +313,90 @@ async function captureFailure(surface: Surface, journal: RunJournal): Promise<st
   return refs;
 }
 
-function hardFailure(
-  step: Step,
-  observedMsg: string,
-  evidenceRefs: string[],
-  resolveResult?: ResolveResult | null,
-): ReplayResult {
-  let observed = observedMsg;
+function buildObserved(msg: string, resolveResult?: ResolveResult | null): string {
+  let observed = msg;
   if (resolveResult && resolveResult.kind !== 'match') {
     const reports = resolveResult.rungReports
       .map(r => `rung ${r.rungIndex} (${r.descriptor.by}): ${r.reason}`)
       .join('; ');
     observed += ` | Rung reports: ${reports}`;
   }
+  return observed;
+}
+
+type EscalationOutcome = { action: 'return'; result: ReplayResult } | { action: 'retry' } | { action: 'skip' };
+
+// In attended mode: escalate → channel → handback claim → retry/skip/abort
+async function escalateOrFail(
+  step: Step, reason: string, evidenceRefs: string[],
+  config: EngineConfig, outputs: Record<string, unknown>,
+  resolveResult?: ResolveResult | null,
+): Promise<EscalationOutcome> {
+  const observed = buildObserved(reason, resolveResult);
+
+  if (!config.attended || !config.channel) {
+    return { action: 'return', result: { status: 'HARD_FAILURE', stepId: step.id, expected: JSON.stringify(step.expect), observed, evidenceRefs } };
+  }
+
+  // ── Attended: escalate ──────────────────────────────────
+  const { surface, artifact, journal } = config;
+  const ssRefs = await captureFailure(surface, journal);
+  const interventionReq: InterventionRequest = {
+    capability: artifact.name,
+    version: artifact.version,
+    stepId: step.id,
+    intent: step.intent,
+    expected: JSON.stringify(step.expect),
+    observed,
+    screenshotRef: ssRefs[0] ?? '',
+    reason,
+    options: ['retry', 'skip', 'abort'],
+  };
+
+  // Write intervention JSON to run dir
+  writeFileSync(join(journal.runDir, `intervention-${step.id}.json`), JSON.stringify(interventionReq, null, 2));
+  journal.event('control_transfer', { to: 'human', stepId: step.id, reason });
+
+  // Ask the channel (may loop on rejected skip)
+  while (true) {
+    const claim = await config.channel.request(interventionReq);
+
+    if (claim.kind === 'abort') {
+      journal.event('handback', { claim: 'abort', notes: claim.notes });
+      journal.event('control_transfer', { to: 'machine', stepId: step.id });
+      return { action: 'return', result: { status: 'ESCALATED', resolution: 'Human aborted', notes: claim.notes } };
+    }
+
+    if (claim.kind === 'retry') {
+      journal.event('handback', { claim: 'retry' });
+      journal.event('control_transfer', { to: 'machine', stepId: step.id });
+      return { action: 'retry' };
+    }
+
+    if (claim.kind === 'skip') {
+      // Verify: the step's expect must pass on the live screen
+      const expectOk = await checkPredicate(step.expect, surface, outputs);
+      if (expectOk) {
+        journal.event('handback', { claim: 'skip', verified: true });
+        journal.event('control_transfer', { to: 'machine', stepId: step.id });
+        return { action: 'skip' };
+      } else {
+        journal.event('handback_rejected', { claim: 'skip', reason: 'expect not met on live screen' });
+        // Ask again
+        interventionReq.observed = 'Skip claim REJECTED: expect does not pass on live screen. Try again.';
+        continue;
+      }
+    }
+  }
+}
+
+function hardFailure(
+  step: Step,
+  observedMsg: string,
+  evidenceRefs: string[],
+  resolveResult?: ResolveResult | null,
+): ReplayResult {
+  const observed = buildObserved(observedMsg, resolveResult);
   return {
     status: 'HARD_FAILURE',
     stepId: step.id,
