@@ -213,6 +213,44 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
             applies[i]--;
             journal.conditionHandled(step.id, handler.do.targetName, applies[i]);
             conditionHandled = true;
+
+            // ── RE-ANCHOR after handler ─────────────────
+            // If the expect doesn't pass within a grace window, re-resolve
+            // and re-act the step's action (one re-attempt max per handler firing).
+            const graceMs = 2000;
+            const graceStart = Date.now();
+            let expectPassedInGrace = false;
+            while (Date.now() - graceStart < graceMs) {
+              if (await checkPredicate(step.expect, surface, outputs, lastTypedValue, lastActionRef)) {
+                expectPassedInGrace = true;
+                break;
+              }
+              await delay(tickMs);
+            }
+            if (!expectPassedInGrace && step.action.verb !== 'navigate') {
+              // Re-resolve + re-act (skip for risky clicks)
+              if (step.risk === 'risky' && step.action.verb === 'click') {
+                journal.event('reanchor_refused_risky', { stepId: step.id });
+                const ss = await captureFailure(surface, journal);
+                return hardFailure(step, 'Reanchor refused: risky click after condition handler', ss);
+              }
+              journal.event('reanchor_reattempt', { stepId: step.id, verb: step.action.verb });
+              const reResolve = await surface.resolve(step.target.chain);
+              if (reResolve.kind === 'match') {
+                const reValue = step.action.value != null ? bindValue(step.action.value, inputs) : undefined;
+                const reAct = await surface.act({ verb: step.action.verb, value: reValue, ref: reResolve.ref });
+                if (reAct.ok) {
+                  lastActionRef = reResolve.ref;
+                  if (step.action.verb === 'type') lastTypedValue = reValue;
+                  if (step.action.verb === 'read' && reAct.readValue != null) {
+                    const parsed = parseValue(reAct.readValue, step.action.parseAs ?? 'string');
+                    if (parsed != null) { outputs[step.action.saveTo!] = parsed; }
+                  }
+                  journal.event('reanchor_acted', { stepId: step.id });
+                }
+              }
+            }
+
             break; // restart arbitration
           }
         }
