@@ -6,6 +6,7 @@
   "scripts": {
     "cli": "tsx src/cli/index.ts",
     "mock": "node mock-console/server.js",
+    "schema:export": "tsx src/schema/export-json-schema.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

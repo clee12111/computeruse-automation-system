@@ -1,0 +1,392 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "CapabilityArtifact",
+  "type": "object",
+  "required": [
+    "name",
+    "version",
+    "app",
+    "inputs",
+    "outputs",
+    "businessOutcomes",
+    "steps"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "app": {
+      "type": "object",
+      "required": [
+        "id",
+        "startPath"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "startPath": {
+          "type": "string"
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "type",
+          "sensitive"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "pattern": {
+            "type": "string"
+          },
+          "sensitive": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "type",
+          "sensitive"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "money",
+              "string",
+              "date",
+              "enum"
+            ]
+          },
+          "sensitive": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "businessOutcomes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "detect"
+        ],
+        "properties": {
+          "detect": {
+            "$ref": "#/$defs/Predicate"
+          }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "intent",
+          "action",
+          "target",
+          "risk",
+          "expect"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "intent": {
+            "type": "string"
+          },
+          "action": {
+            "type": "object",
+            "required": [
+              "verb"
+            ],
+            "properties": {
+              "verb": {
+                "type": "string",
+                "enum": [
+                  "click",
+                  "type",
+                  "select",
+                  "read",
+                  "navigate"
+                ]
+              },
+              "value": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "$input": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "$input"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "parseAs": {
+                "type": "string",
+                "enum": [
+                  "money",
+                  "string",
+                  "date",
+                  "enum"
+                ]
+              },
+              "saveTo": {
+                "type": "string"
+              }
+            }
+          },
+          "target": {
+            "type": "object",
+            "required": [
+              "chain",
+              "reasoning"
+            ],
+            "properties": {
+              "chain": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "by"
+                  ],
+                  "properties": {
+                    "by": {
+                      "type": "string",
+                      "enum": [
+                        "roleName",
+                        "labelProximity",
+                        "tableCell",
+                        "anchorRelation",
+                        "structural",
+                        "geometric"
+                      ]
+                    }
+                  }
+                }
+              },
+              "reasoning": {
+                "type": "string"
+              }
+            }
+          },
+          "risk": {
+            "type": "string",
+            "enum": [
+              "safe",
+              "risky"
+            ]
+          },
+          "expect": {
+            "$ref": "#/$defs/Predicate"
+          },
+          "onCondition": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "if",
+                "do",
+                "maxApplies"
+              ],
+              "properties": {
+                "if": {
+                  "$ref": "#/$defs/Predicate"
+                },
+                "do": {
+                  "type": "object",
+                  "required": [
+                    "verb",
+                    "targetName"
+                  ],
+                  "properties": {
+                    "verb": {
+                      "type": "string",
+                      "enum": [
+                        "click",
+                        "type",
+                        "select",
+                        "read",
+                        "navigate"
+                      ]
+                    },
+                    "targetName": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "maxApplies": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Predicate": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "textPresent"
+          ],
+          "properties": {
+            "textPresent": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "textAbsent"
+          ],
+          "properties": {
+            "textAbsent": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "elementPresent"
+          ],
+          "properties": {
+            "elementPresent": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "dialogPresent"
+          ],
+          "properties": {
+            "dialogPresent": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "urlMatches"
+          ],
+          "properties": {
+            "urlMatches": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "outputPopulated"
+          ],
+          "properties": {
+            "outputPopulated": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "elementValue"
+          ],
+          "properties": {
+            "elementValue": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "anyOf"
+          ],
+          "properties": {
+            "anyOf": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Predicate"
+              },
+              "minItems": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "allOf"
+          ],
+          "properties": {
+            "allOf": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Predicate"
+              },
+              "minItems": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "$outcome"
+          ],
+          "properties": {
+            "$outcome": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

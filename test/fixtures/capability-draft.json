@@ -1,0 +1,71 @@
+{
+  "name": "lookup-member-savings-balance",
+  "version": "1.0.0",
+  "app": { "id": "vendor-console", "startPath": "/search" },
+
+  "inputs": {
+    "memberId": { "type": "string", "pattern": "^[0-9]{5}$", "sensitive": false }
+  },
+
+  "outputs": {
+    "savingsBalance": { "type": "money", "sensitive": true }
+  },
+
+  "businessOutcomes": {
+    "MEMBER_NOT_FOUND": { "detect": { "textPresent": "No member matches" } }
+  },
+
+  "steps": [
+    {
+      "id": "s1",
+      "intent": "Enter the member number into the search field",
+      "action": { "verb": "type", "value": { "$input": "memberId" } },
+      "target": {
+        "chain": [
+          { "by": "labelProximity", "role": "textbox", "anchor": "Member Number" },
+          { "by": "structural", "note": "only textbox in the search form" }
+        ],
+        "reasoning": "Input is unlabeled in markup; anchored to adjacent text. Anchor text is tenant-configurable, so a structural fallback covers label drift."
+      },
+      "risk": "safe",
+      "expect": { "elementValue": { "$self": true } }
+    },
+    {
+      "id": "s2",
+      "intent": "Submit the search",
+      "action": { "verb": "click" },
+      "target": {
+        "chain": [ { "by": "roleName", "role": "button", "name": "Search" } ],
+        "reasoning": "Uniquely named button; most stable locator available."
+      },
+      "risk": "safe",
+      "expect": {
+        "anyOf": [
+          { "textPresent": "Member Details" },
+          { "$outcome": "MEMBER_NOT_FOUND" }
+        ]
+      },
+      "onCondition": [
+        {
+          "if": { "dialogPresent": "Session expiring" },
+          "do": { "verb": "click", "targetName": "Continue" },
+          "maxApplies": 1
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "intent": "Read the savings account balance from the accounts table",
+      "action": { "verb": "read", "parseAs": "money", "saveTo": "savingsBalance" },
+      "target": {
+        "chain": [
+          { "by": "tableCell", "column": "Balance", "rowContains": "Savings" },
+          { "by": "anchorRelation", "relation": "right-of", "anchor": "Savings", "match": "currency" }
+        ],
+        "reasoning": "Anchored to headers/labels, not position — members have varying account counts and row order."
+      },
+      "risk": "safe",
+      "expect": { "outputPopulated": "savingsBalance" }
+    }
+  ]
+}
