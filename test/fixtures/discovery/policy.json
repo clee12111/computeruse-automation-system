@@ -1,0 +1,5 @@
+[
+  { "tool": "act", "verb": "navigate", "value": "http://evil.example.com/1", "intent": "Bad navigate 1", "expectProposal": { "textPresent": "x" } },
+  { "tool": "act", "verb": "navigate", "value": "http://evil.example.com/2", "intent": "Bad navigate 2", "expectProposal": { "textPresent": "x" } },
+  { "tool": "act", "verb": "navigate", "value": "http://evil.example.com/3", "intent": "Bad navigate 3", "expectProposal": { "textPresent": "x" } }
+]

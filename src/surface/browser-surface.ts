@@ -101,7 +101,7 @@ export class BrowserSurface implements Surface {
       const fname = this.frameName(frame);
       try {
         const items = await frame.evaluate(() => {
-          const interactiveSelectors = 'a, button, input, select, textarea, [role]';
+          const interactiveSelectors = 'a, button, input, select, textarea, [role], td, th';
           const els = Array.from(document.querySelectorAll(interactiveSelectors));
           return els.map(el => {
             const tag = el.tagName.toLowerCase();

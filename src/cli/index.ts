@@ -61,8 +61,8 @@ if (!command || command === '--help' || command === '-h') {
 }
 
 if (command === 'discover') {
-  console.log('discover: not implemented (Phase 5)');
-  process.exit(1);
+  const { runDiscover } = await import('./discover.js');
+  await runDiscover(args.slice(1));
 } else if (command === 'replay') {
   const { runReplay } = await import('./replay.js');
   await runReplay(args.slice(1));

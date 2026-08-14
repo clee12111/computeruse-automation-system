@@ -1,0 +1,11 @@
+[
+  { "tool": "act", "verb": "type", "targetMatch": { "role": "textbox", "nearbyText": "Username" }, "value": "operator", "intent": "Enter username", "expectProposal": { "elementValue": { "$self": true } }, "paramHint": "username" },
+  { "tool": "act", "verb": "type", "targetMatch": { "role": "textbox", "nearbyText": "Password" }, "value": "demo123", "intent": "Enter password", "expectProposal": { "elementValue": { "$self": true } }, "paramHint": "password" },
+  { "tool": "act", "verb": "click", "targetMatch": { "role": "button", "name": "Sign In" }, "intent": "Login", "expectProposal": { "textPresent": "Dashboard" } },
+  { "tool": "done", "summary": "I think I am done" },
+  { "tool": "act", "verb": "navigate", "value": "/search", "intent": "Go to search", "expectProposal": { "textPresent": "Member Number" } },
+  { "tool": "act", "verb": "type", "targetMatch": { "role": "textbox", "nearbyText": "Member Number" }, "value": "12345", "intent": "Enter member", "expectProposal": { "elementValue": { "$self": true } }, "paramHint": "memberId" },
+  { "tool": "act", "verb": "click", "targetMatch": { "role": "button", "name": "Member Search" }, "intent": "Search", "expectProposal": { "textPresent": "Member Details" } },
+  { "tool": "act", "verb": "read", "targetMatch": { "name": "4,320" }, "outputName": "savingsBalance", "intent": "Read balance", "expectProposal": { "outputPopulated": "savingsBalance" } },
+  { "tool": "done", "summary": "Now actually done" }
+]
