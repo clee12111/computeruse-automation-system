@@ -12,7 +12,7 @@ import { RunJournal } from '../evidence/journal.js';
 // ── Stop condition constants ────────────────────────────────
 const MAX_STEPS = 15;
 const MAX_REFUSALS = 3;
-const MAX_SAME_ACTION = 3; // 3rd consecutive same verb+target → DEAD_END
+const MAX_SAME_ACTION = 5; // 5th consecutive same verb+target → DEAD_END
 const WALL_CLOCK_TIMEOUT_MS = 120_000;
 
 // ── Discovery contract (from CLI args) ──────────────────────
@@ -45,6 +45,7 @@ export interface DiscoverConfig {
 // ── Parse money ─────────────────────────────────────────────
 function parseMoney(raw: string): number | null {
   const cleaned = raw.replace(/[$,\s]/g, '');
+  if (!/^-?\d+(\.\d+)?$/.test(cleaned)) return null; // strict: digits and optional decimal only
   const n = parseFloat(cleaned);
   return isNaN(n) ? null : Math.round(n * 100) / 100;
 }
@@ -115,7 +116,7 @@ export async function discover(config: DiscoverConfig): Promise<DiscoverResult> 
       goal: contract.goal,
       contract: {
         name: contract.name,
-        inputs: Object.fromEntries(Object.entries(contract.inputs).map(([k, v]) => [k, { type: v.type }])),
+        inputs: Object.fromEntries(Object.entries(contract.inputs).map(([k, v]) => [k, { type: v.type, exampleValue: v.exampleValue }])),
         outputs: Object.fromEntries(Object.entries(contract.outputs).map(([k, v]) => [k, { type: v.type }])),
       },
       journal: journalLines,
@@ -305,11 +306,39 @@ export async function discover(config: DiscoverConfig): Promise<DiscoverResult> 
         targetIsPassword: targetEl?.role === 'textbox' && targetEl?.nearbyText?.toLowerCase().includes('password'),
       });
       journalLines.push(`OK: ${act.verb} ${act.targetRef} → expect passed`);
+      // If a read populated an output, tell the model explicitly
+      if (act.verb === 'read' && act.outputName) {
+        const val = recorder.getOutputs()[act.outputName];
+        if (val != null) {
+          journalLines.push(`OUTPUT_POPULATED: ${act.outputName} — call done now`);
+        }
+      }
       journal.event('step_ok', { step: stepCount, verb: act.verb, rungCount: chain.length });
     } else {
-      journalLines.push(`EXPECT_FAILED: ${act.verb} ${act.targetRef} — retrying`);
-      journal.event('expect_failed', { step: stepCount, verb: act.verb });
-      // Retry: the next decide() call will get the failure in the journal
+      // Expect failed. For click actions that caused page navigation, still record
+      // with a fallback expect based on what IS visible now.
+      if (act.verb === 'click') {
+        const currentObs = await surface.observe();
+        const visibleBtn = currentObs.elements.find(e => e.role === 'button' || e.role === 'heading');
+        const fallbackExpect = visibleBtn
+          ? { textPresent: visibleBtn.name.substring(0, 40) } as const
+          : { urlMatches: new URL(currentObs.url).pathname } as const;
+
+        recorder.record({
+          intent: act.intent,
+          verb: act.verb,
+          value: act.value,
+          chain: chain.length > 0 ? chain : [{ by: 'structural' as const, note: 'fallback' }],
+          expect: fallbackExpect,
+          targetName: targetEl?.name,
+          targetIsPassword: false,
+        });
+        journalLines.push(`OK: ${act.verb} ${act.targetRef} → recorded with fallback expect`);
+        journal.event('step_ok_fallback', { step: stepCount, verb: act.verb, fallbackExpect });
+      } else {
+        journalLines.push(`EXPECT_FAILED: ${act.verb} ${act.targetRef} — retrying`);
+        journal.event('expect_failed', { step: stepCount, verb: act.verb });
+      }
     }
   }
 }

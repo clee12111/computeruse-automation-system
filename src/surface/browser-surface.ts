@@ -112,19 +112,34 @@ export class BrowserSurface implements Surface {
             const rect = el.getBoundingClientRect();
             // Find nearest label-like text (parent's text minus our own text)
             let nearbyText = '';
+            let columnHeader = '';
             const row = el.closest('tr');
             if (row) {
               const cells = Array.from(row.querySelectorAll('td, th'));
               const myCell = el.closest('td, th');
+              const myIdx = cells.indexOf(myCell as HTMLElement);
               for (const c of cells) {
                 if (c !== myCell && c.textContent?.trim()) {
                   nearbyText = c.textContent.trim().substring(0, 80);
                   break;
                 }
               }
+              // Find column header for this cell
+              if (myIdx >= 0 && (tag === 'td' || tag === 'th')) {
+                const table = el.closest('table');
+                if (table) {
+                  const headerRow = table.querySelector('tr');
+                  if (headerRow && headerRow !== row) {
+                    const headers = Array.from(headerRow.querySelectorAll('th, td'));
+                    if (headers[myIdx]) {
+                      columnHeader = headers[myIdx].textContent?.trim()?.substring(0, 30) || '';
+                    }
+                  }
+                }
+              }
             }
             return {
-              tag, type, ariaRole, ariaLabel, text, nearbyText,
+              tag, type, ariaRole, ariaLabel, text, nearbyText, columnHeader,
               value: (el as HTMLInputElement).value || '',
               x: rect.x, y: rect.y, width: rect.width, height: rect.height,
             };
@@ -139,6 +154,7 @@ export class BrowserSurface implements Surface {
           elements.push({
             ref, role, name: name.substring(0, 100),
             nearbyText: item.nearbyText || undefined,
+            columnHeader: item.columnHeader || undefined,
             frame: fname,
             value: item.value || undefined,
             bounds: { x: item.x, y: item.y, width: item.width, height: item.height },
@@ -303,6 +319,9 @@ export class BrowserSurface implements Surface {
     if (role === 'textbox') {
       return container.locator('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]), textarea');
     }
+    if (role === 'cell' || role === 'columnheader') {
+      return container.locator('td, th');
+    }
     if ('getByRole' in container && typeof container.getByRole === 'function') {
       return container.getByRole(role as any);
     }
@@ -316,7 +335,12 @@ export class BrowserSurface implements Surface {
 
     switch (desc.by) {
       case 'roleName': {
-        locator = frame.getByRole(desc.role as any, { name: desc.name, exact: true });
+        if (desc.role === 'cell' || desc.role === 'columnheader') {
+          // Playwright's getByRole doesn't match td/th; use locator with text filter
+          locator = frame.locator('td, th').filter({ hasText: desc.name });
+        } else {
+          locator = frame.getByRole(desc.role as any, { name: desc.name, exact: true });
+        }
         break;
       }
       case 'labelProximity': {

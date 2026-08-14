@@ -8,7 +8,11 @@ import type { Observation, ElementInfo } from '../surface/surface.js';
 // ── Decision context (what the LLM sees) ────────────────────
 export interface DecisionContext {
   goal: string;
-  contract: { name: string; inputs: Record<string, { type: string }>; outputs: Record<string, { type: string }> };
+  contract: {
+    name: string;
+    inputs: Record<string, { type: string; exampleValue?: string }>;
+    outputs: Record<string, { type: string }>;
+  };
   journal: string[];           // one-line summaries of past steps (incl. failures)
   observation: Observation;
 }

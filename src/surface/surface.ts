@@ -10,6 +10,7 @@ export interface ElementInfo {
   role: string;        // ARIA role or implicit role
   name: string;        // accessible name or visible text
   nearbyText?: string; // closest label-like text
+  columnHeader?: string; // for table cells: the column header text
   frame: string;       // 'main' or iframe identifier
   value?: string;      // current value (inputs, selects)
   bounds?: { x: number; y: number; width: number; height: number };

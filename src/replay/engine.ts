@@ -59,6 +59,7 @@ function bindValue(
 // ── Money parser ────────────────────────────────────────────
 function parseMoney(raw: string): number | null {
   const cleaned = raw.replace(/[$,\s]/g, '');
+  if (!/^-?\d+(\.\d+)?$/.test(cleaned)) return null; // strict: digits and optional decimal only
   const num = parseFloat(cleaned);
   return isNaN(num) ? null : Math.round(num * 100) / 100;
 }
