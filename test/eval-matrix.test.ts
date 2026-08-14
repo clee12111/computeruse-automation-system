@@ -42,7 +42,7 @@ async function runReplay(
   (surface as any).config.screenshotDir = journal.runDir;
   await surface.launch();
   try {
-    const result = await replay({ surface, artifact: a, inputs, journal, stepTimeoutMs: opts?.stepTimeoutMs ?? 15000, tickMs: 200 });
+    const result = await replay({ surface, artifact: a, inputs, journal, stepTimeoutMs: opts?.stepTimeoutMs ?? 15000, tickMs: 200, allowRisky: true });
     journal.writeResult(result);
     return { result, journal };
   } finally {
@@ -139,7 +139,7 @@ describe('Eval Matrix', { timeout: 60000 }, () => {
       (surface as any).config.screenshotDir = journal.runDir;
       await surface.launch();
       try {
-        const result = await replay({ surface, artifact: mod, inputs: { memberId: '12345', ...CREDS }, journal, stepTimeoutMs: 10000, tickMs: 200 });
+        const result = await replay({ surface, artifact: mod, inputs: { memberId: '12345', ...CREDS }, journal, stepTimeoutMs: 10000, tickMs: 200, allowRisky: true });
         journal.writeResult(result);
 
         // With 800ms TTL, the session expires before all steps complete.

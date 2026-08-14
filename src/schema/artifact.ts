@@ -167,5 +167,6 @@ export const CapabilityArtifactSchema = z.object({
   outputs: z.record(z.string(), OutputDeclSchema),
   businessOutcomes: z.record(z.string(), BusinessOutcomeSchema),
   steps: z.array(StepSchema).min(1),
+  humanAssisted: z.boolean().optional(),
 });
 export type CapabilityArtifact = z.infer<typeof CapabilityArtifactSchema>;

@@ -40,7 +40,7 @@ async function runReplay(
 
   await surface.launch();
   try {
-    const result = await replay({ surface, artifact: a, inputs, journal, stepTimeoutMs: 15000, tickMs: 200 });
+    const result = await replay({ surface, artifact: a, inputs, journal, stepTimeoutMs: 15000, tickMs: 200, allowRisky: true });
     if (result.status === 'SUCCESS') {
       for (const [key, decl] of Object.entries(a.outputs)) {
         if (decl.sensitive && result.outputs[key] != null) {

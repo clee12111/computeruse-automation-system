@@ -8,7 +8,8 @@ import type { InterventionRequest } from '../schema/results.js';
 export type HandbackClaim =
   | { kind: 'retry' }
   | { kind: 'skip' }
-  | { kind: 'abort'; notes?: string };
+  | { kind: 'abort'; notes?: string }
+  | { kind: 'approve' }; // risky-step approval
 
 // ── Channel interface ───────────────────────────────────────
 export interface EscalationChannel {
@@ -62,13 +63,17 @@ export class ScriptedChannel implements EscalationChannel {
   private claims: HandbackClaim[];
   private index = 0;
   public requests: InterventionRequest[] = [];
+  private beforeClaimHook?: () => Promise<void>;
 
-  constructor(claims: HandbackClaim[]) {
+  constructor(claims: HandbackClaim[], opts?: { beforeClaim?: () => Promise<void> }) {
     this.claims = claims;
+    this.beforeClaimHook = opts?.beforeClaim;
   }
 
   async request(req: InterventionRequest): Promise<HandbackClaim> {
     this.requests.push(req);
+    // Let the test interact with the browser before returning the claim
+    if (this.beforeClaimHook) await this.beforeClaimHook();
     if (this.index >= this.claims.length) {
       return { kind: 'abort', notes: 'Scripted claims exhausted' };
     }

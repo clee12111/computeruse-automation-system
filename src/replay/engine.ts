@@ -26,6 +26,7 @@ export interface EngineConfig {
   tickMs?: number;         // default 250
   attended?: boolean;       // attended mode: escalate instead of hard-fail
   channel?: EscalationChannel; // the escalation channel (required if attended)
+  allowRisky?: boolean;    // permit execution of risky steps (default false)
 }
 
 // ── Pre-flight: validate inputs BEFORE launching browser ────
@@ -96,9 +97,7 @@ async function checkPredicate(
 
   if ('elementValue' in p) {
     // { $self: true } — the element just acted on contains the value we set.
-    // For type actions, the value was filled via surface.act; verify it took.
-    // Playwright's fill() is synchronous with the DOM, so this always succeeds
-    // immediately after a successful type action.
+    // For type/select actions, fill/selectOption are synchronous with the DOM.
     return lastTypedValue != null;
   }
 
@@ -125,12 +124,36 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
     }
   }
 
+  const approvedRiskySteps = new Set<string>();
+
   for (const step of artifact.steps) {
     // Retry loop for attended escalation
     let stepRetry = true;
     while (stepRetry) {
     stepRetry = false;
     journal.stepStart(step.id, step.intent);
+
+    // ── RISKY GATE ──────────────────────────────────────
+    if (step.risk === 'risky' && !config.allowRisky && !approvedRiskySteps.has(step.id)) {
+      if (config.attended && config.channel) {
+        // In attended mode: pause for approval
+        const ss = await captureFailure(surface, journal);
+        const riskyEsc = await escalateOrFail(step, `Risky step ${step.id} requires approval (--allow-risky or attended approval)`, ss, config, outputs);
+        if (riskyEsc.action === 'retry') { approvedRiskySteps.add(step.id); stepRetry = true; break; }
+        if (riskyEsc.action === 'skip') break;
+        // 'approve' claim: allow this step to proceed
+        if (riskyEsc.action === 'return' && riskyEsc.result.status === 'ESCALATED') return riskyEsc.result;
+        return riskyEsc.result;
+      } else {
+        // Unattended: stop BEFORE the risky step
+        return {
+          status: 'HARD_FAILURE', stepId: step.id,
+          expected: JSON.stringify(step.expect),
+          observed: `Risky step ${step.id} requires --allow-risky`,
+          evidenceRefs: [],
+        };
+      }
+    }
 
     // ── RESOLVE or NAVIGATE ─────────────────────────────
     let lastActionRef: string | undefined;
@@ -196,7 +219,7 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
         journal.event('output_parsed', { stepId: step.id, key: step.action.saveTo!, parseAs: step.action.parseAs });
       }
 
-      if (step.action.verb === 'type') {
+      if (step.action.verb === 'type' || step.action.verb === 'select') {
         lastTypedValue = actionValue;
       }
     }
@@ -370,6 +393,14 @@ async function escalateOrFail(
     if (claim.kind === 'retry') {
       journal.event('handback', { claim: 'retry' });
       journal.event('control_transfer', { to: 'machine', stepId: step.id });
+      return { action: 'retry' };
+    }
+
+    if (claim.kind === 'approve') {
+      // Risky-step approval — allow the step to proceed (tracked per-step)
+      journal.event('handback', { claim: 'approve' });
+      journal.event('control_transfer', { to: 'machine', stepId: step.id });
+      // The caller must add step.id to approvedRiskySteps before re-entering
       return { action: 'retry' };
     }
 
