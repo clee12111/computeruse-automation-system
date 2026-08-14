@@ -64,8 +64,8 @@ if (command === 'discover') {
   console.log('discover: not implemented (Phase 5)');
   process.exit(1);
 } else if (command === 'replay') {
-  console.log('replay: not implemented (Phase 4)');
-  process.exit(1);
+  const { runReplay } = await import('./replay.js');
+  await runReplay(args.slice(1));
 } else {
   console.error(`Unknown command: ${command}`);
   printUsage();

@@ -29,7 +29,7 @@ export const AnchorRelationDescriptor = z.object({
   by: z.literal('anchorRelation'), relation: z.string(), anchor: z.string(), match: z.string(),
 });
 export const StructuralDescriptor = z.object({
-  by: z.literal('structural'), note: z.string(),
+  by: z.literal('structural'), note: z.string(), near: z.string().optional(),
 });
 export const GeometricDescriptor = z.object({
   by: z.literal('geometric'), lastResort: z.literal(true),
@@ -56,7 +56,7 @@ export type Predicate =
   | { dialogPresent: string }
   | { urlMatches: string }
   | { outputPopulated: string }
-  | { elementValue: Record<string, unknown> }
+  | { elementValue: { $self: true } }
   | { anyOf: Predicate[] }
   | { allOf: Predicate[] }
   | { $outcome: string };
@@ -69,7 +69,7 @@ export const PredicateSchema: z.ZodType<Predicate> = z.lazy(() =>
     z.object({ dialogPresent: z.string() }).strict(),
     z.object({ urlMatches: z.string() }).strict(),
     z.object({ outputPopulated: z.string() }).strict(),
-    z.object({ elementValue: z.record(z.unknown()) }).strict(),
+    z.object({ elementValue: z.object({ $self: z.literal(true) }).strict() }).strict(),
     z.object({ anyOf: z.array(z.lazy(() => PredicateSchema)).min(1) }).strict(),
     z.object({ allOf: z.array(z.lazy(() => PredicateSchema)).min(1) }).strict(),
     z.object({ $outcome: z.string() }).strict(),

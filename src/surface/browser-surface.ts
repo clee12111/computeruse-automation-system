@@ -46,6 +46,7 @@ export class BrowserSurface implements Surface {
   private context: BrowserContext | null = null;
   private page: Page | null = null;
   private elementMap = new Map<string, { frame: string; locatorDesc: string }>();
+  private resolvedLocators = new Map<string, Locator>();
   private lastObservation: Observation | null = null;
   private refCounter = 0;
   private ssCounter = 0;
@@ -296,6 +297,18 @@ export class BrowserSurface implements Surface {
     return { kind: hasAmbiguous ? 'ambiguous' : 'notFound', rungReports };
   }
 
+  // Map semantic role to Playwright locator — handles textbox specially
+  // (Playwright's getByRole('textbox') misses input[type=password])
+  private roleLocator(container: Locator | Frame, role: string): Locator {
+    if (role === 'textbox') {
+      return container.locator('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]), textarea');
+    }
+    if ('getByRole' in container && typeof container.getByRole === 'function') {
+      return container.getByRole(role as any);
+    }
+    return (container as Locator).getByRole(role as any);
+  }
+
   private async resolveRungInFrame(
     desc: Descriptor, frame: Frame, fname: string,
   ): Promise<{ count: number; ref: string | null }> {
@@ -307,38 +320,45 @@ export class BrowserSurface implements Surface {
         break;
       }
       case 'labelProximity': {
-        // Find a row (or nearest container) with the anchor text, then the role element within
-        const containers = frame.locator('tr, div, td, fieldset, section').filter({ hasText: desc.anchor });
-        locator = containers.getByRole(desc.role as any);
+        // Find the exact label text element, go to its closest ancestor TR, find the role within.
+        // Using exact text matching avoids hitting outer layout cells that contain the text as a descendant.
+        const textEl = frame.getByText(desc.anchor, { exact: true });
+        const parentRow = textEl.locator('xpath=ancestor::tr[1]');
+        locator = this.roleLocator(parentRow, desc.role);
         break;
       }
       case 'tableCell': {
-        // Evaluate in the browser: find the cell by column header + row text
-        const count = await frame.evaluate(({ column, rowContains }) => {
+        // Find cells by column header + row text; count matches and get the element
+        const result = await frame.evaluate(({ column, rowContains }) => {
           const tables = Array.from(document.querySelectorAll('table'));
-          let matchCount = 0;
-          for (const table of tables) {
+          const matches: { tableIdx: number; rowIdx: number; colIdx: number }[] = [];
+          tables.forEach((table, ti) => {
             const headerRow = table.querySelector('tr');
-            if (!headerRow) continue;
+            if (!headerRow) return;
             const headers = Array.from(headerRow.querySelectorAll('th, td'));
             const colIndex = headers.findIndex(h => h.textContent?.trim() === column);
-            if (colIndex < 0) continue;
+            if (colIndex < 0) return;
             const rows = Array.from(table.querySelectorAll('tr')).slice(1);
-            for (const row of rows) {
-              if (!row.textContent?.includes(rowContains)) continue;
+            rows.forEach((row, ri) => {
+              if (!row.textContent?.includes(rowContains)) return;
               const cells = Array.from(row.querySelectorAll('td, th'));
-              if (cells[colIndex]) matchCount++;
-            }
-          }
-          return matchCount;
+              if (cells[colIndex]) matches.push({ tableIdx: ti, rowIdx: ri + 1, colIdx: colIndex });
+            });
+          });
+          return matches;
         }, { column: desc.column, rowContains: desc.rowContains });
 
-        if (count === 1) {
+        if (result.length === 1) {
+          const m = result[0];
+          // Build a locator to the matched cell
+          const cellLocator = frame.locator(`table`).nth(m.tableIdx)
+            .locator('tr').nth(m.rowIdx).locator('td, th').nth(m.colIdx);
           const ref = `r${this.refCounter++}`;
           this.elementMap.set(ref, { frame: fname, locatorDesc: `tableCell:${desc.column}/${desc.rowContains}` });
+          this.resolvedLocators.set(ref, cellLocator);
           return { count: 1, ref };
         }
-        return { count, ref: null };
+        return { count: result.length, ref: null };
       }
       case 'anchorRelation': {
         // Find elements matching 'match' near the 'anchor' text with given 'relation'
@@ -350,18 +370,19 @@ export class BrowserSurface implements Surface {
         // Parse the note for positional info
         const match = desc.note.match(/^only (\w+) in (.+)$/);
         if (match) {
-          locator = frame.getByRole(match[1] as any);
+          locator = this.roleLocator(frame, match[1]);
           if (this.frameName(frame) !== match[2]) return { count: 0, ref: null };
         } else {
           const posMatch = desc.note.match(/^(\w+) #(\d+) of (\d+) in (.+)$/);
           if (posMatch && this.frameName(frame) === posMatch[4]) {
             const role = posMatch[1];
             const idx = parseInt(posMatch[2], 10) - 1;
-            locator = frame.getByRole(role as any).nth(idx);
-            const total = await frame.getByRole(role as any).count();
+            locator = this.roleLocator(frame, role).nth(idx);
+            const total = await this.roleLocator(frame, role).count();
             if (total === parseInt(posMatch[3], 10)) {
               const ref = `r${this.refCounter++}`;
               this.elementMap.set(ref, { frame: this.frameName(frame), locatorDesc: `structural:${desc.note}` });
+              this.resolvedLocators.set(ref, locator);
               return { count: 1, ref };
             }
             return { count: 0, ref: null };
@@ -394,6 +415,7 @@ export class BrowserSurface implements Surface {
     if (count === 1) {
       const ref = `r${this.refCounter++}`;
       this.elementMap.set(ref, { frame: fname, locatorDesc: `${desc.by}:resolved` });
+      this.resolvedLocators.set(ref, locator.first());
       return { count, ref };
     }
     return { count, ref: null };
@@ -553,33 +575,7 @@ export class BrowserSurface implements Surface {
   // ── Internal helpers ──────────────────────────────────────
 
   private async refToLocator(ref: string): Promise<Locator | null> {
-    // Re-observe to get fresh element positions, then find the element
-    // For now, use a simple approach: if the ref was from a resolve,
-    // we need to re-find it. This is a limitation — refs are ephemeral.
-    const info = this.elementMap.get(ref);
-    if (!info) return null;
-
-    // For resolved refs, we stored enough info to re-locate
-    // This is a simplified approach; in production, we'd re-resolve the chain
-    const frame = this.findFrame(info.frame);
-    if (!frame) return null;
-
-    // Try to use the locator description to re-find
-    const parts = info.locatorDesc.split(':');
-    if (parts[0] === 'tableCell') {
-      // TableCell refs are handled specially
-      return null;
-    }
-    // For most refs, the locator desc is "role:name"
-    const role = parts[0];
-    const name = parts.slice(1).join(':');
-    if (role && name) {
-      const loc = frame.getByRole(role as any, { name, exact: true });
-      if (await loc.count() === 1) return loc;
-      // Fallback: try by text
-      const byText = frame.getByText(name, { exact: true });
-      if (await byText.count() === 1) return byText;
-    }
-    return null;
+    // Use stored Locator from resolve() — never re-derive from descriptor
+    return this.resolvedLocators.get(ref) ?? null;
   }
 }
