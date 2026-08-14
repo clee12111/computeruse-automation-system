@@ -185,8 +185,8 @@ export class BrowserSurface implements Surface {
 
     const chain: Descriptor[] = [];
 
-    // Strategy 1: roleName (if element has a meaningful accessible name)
-    if (el.name && el.name.length > 1 && el.role) {
+    // Strategy 1: roleName (skip td/th — a cell's accessible name is its DATA, not identity)
+    if (el.name && el.name.length > 1 && el.role && el.role !== 'cell' && el.role !== 'columnheader') {
       const candidate: Descriptor = { by: 'roleName' as const, role: el.role, name: el.name };
       const verified = await this.resolve([candidate]);
       if (verified.kind === 'match') chain.push(candidate);
@@ -248,7 +248,8 @@ export class BrowserSurface implements Surface {
           if (!headerRow) continue;
           const headers = Array.from(headerRow.querySelectorAll('th, td'));
           const header = headers[colIndex]?.textContent?.trim() || '';
-          if (!header) continue;
+          // Sane header: single line, ≤40 chars; else skip (probably a layout table, not data)
+          if (!header || header.includes('\n') || header.length > 40) continue;
           // Find row identifier — prefer distinctive text (non-numeric, non-ID-shaped)
           const rowTexts = allCells.filter((_, i) => i !== colIndex)
             .map(c => c.textContent?.trim() || '').filter(t => t.length > 0);

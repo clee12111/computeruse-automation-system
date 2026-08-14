@@ -1,6 +1,6 @@
 {
   "name": "lookup-savings-balance-live",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "app": {
     "id": "vendor-console",
     "startPath": "/login"
@@ -26,7 +26,13 @@
       "sensitive": true
     }
   },
-  "businessOutcomes": {},
+  "businessOutcomes": {
+    "MEMBER_NOT_FOUND": {
+      "detect": {
+        "textPresent": "No member matches"
+      }
+    }
+  },
   "steps": [
     {
       "id": "s1",
@@ -262,8 +268,27 @@
       },
       "risk": "safe",
       "expect": {
-        "textPresent": "Member Search"
-      }
+        "anyOf": [
+          {
+            "textPresent": "Member Details"
+          },
+          {
+            "$outcome": "MEMBER_NOT_FOUND"
+          }
+        ]
+      },
+      "onCondition": [
+        {
+          "if": {
+            "textPresent": "session is about to expire"
+          },
+          "do": {
+            "verb": "click",
+            "targetName": "Continue"
+          },
+          "maxApplies": 1
+        }
+      ]
     },
     {
       "id": "s8",

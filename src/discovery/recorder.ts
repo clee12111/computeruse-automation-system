@@ -85,9 +85,17 @@ export class Recorder {
       if (entry.parseAs) action.parseAs = entry.parseAs;
       if (entry.outputName) action.saveTo = entry.outputName;
 
+      // Scrub example values from intent strings
+      let intent = entry.intent;
+      for (const [inputName, inputDecl] of Object.entries(contract.inputs)) {
+        if (inputDecl.exampleValue && intent.includes(inputDecl.exampleValue)) {
+          intent = intent.split(inputDecl.exampleValue).join(`<${inputName}>`);
+        }
+      }
+
       return {
         id: `s${i + 1}`,
-        intent: entry.intent,
+        intent,
         action,
         target: {
           chain: entry.chain,
