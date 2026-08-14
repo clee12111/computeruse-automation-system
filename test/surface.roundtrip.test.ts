@@ -135,6 +135,18 @@ describe('Surface roundtrip', { timeout: 15000 }, () => {
     ];
     const result = await surface.resolve(chain);
     expect(result.kind).toBe('match');
+
+    // Verify describe() generates rowContains: "Savings" (not "00")
+    // Find the balance cell in the observation
+    const obs2 = await surface.observe();
+    const balanceCell = obs2.elements.find(e => e.name?.includes('4,320') && e.frame !== 'main');
+    if (balanceCell) {
+      const descChain = await surface.describe(balanceCell.ref);
+      const tcRung = descChain.find(d => d.by === 'tableCell');
+      if (tcRung && tcRung.by === 'tableCell') {
+        expect(tcRung.rowContains).toBe('Savings');
+      }
+    }
   });
 
   it('member detail: Transfer Funds + Open Sub-Account links roundtrip', async () => {

@@ -51,7 +51,7 @@
     },
     {
       "id": "s2",
-      "intent": "Enter the username to log in.",
+      "intent": "Enter the provided operator username.",
       "action": {
         "verb": "type",
         "value": {
@@ -92,7 +92,7 @@
     },
     {
       "id": "s3",
-      "intent": "Enter the password to log in",
+      "intent": "Enter the provided password to complete the login form.",
       "action": {
         "verb": "type",
         "value": {
@@ -133,7 +133,7 @@
     },
     {
       "id": "s4",
-      "intent": "Click the Sign In button to log in with provided credentials.",
+      "intent": "Submit the completed login form to access the operator console.",
       "action": {
         "verb": "click"
       },
@@ -164,7 +164,7 @@
     },
     {
       "id": "s5",
-      "intent": "Go to Member Search to look up member 12345",
+      "intent": "Open Member Search to look up member 12345.",
       "action": {
         "verb": "click"
       },
@@ -195,7 +195,7 @@
     },
     {
       "id": "s6",
-      "intent": "Enter memberId into Member Number field",
+      "intent": "Enter the exact member ID to search for member 12345.",
       "action": {
         "verb": "type",
         "value": {
@@ -236,7 +236,7 @@
     },
     {
       "id": "s7",
-      "intent": "Submit the member search for memberId 12345",
+      "intent": "Submit the member search for member 12345",
       "action": {
         "verb": "click"
       },
@@ -262,12 +262,12 @@
       },
       "risk": "safe",
       "expect": {
-        "textPresent": "Go"
+        "textPresent": "Member Search"
       }
     },
     {
       "id": "s8",
-      "intent": "Read the Balance for the Savings row (row 00) for member 12345.",
+      "intent": "Read the Balance cell for the Savings account row.",
       "action": {
         "verb": "read",
         "parseAs": "money",
@@ -276,14 +276,14 @@
       "target": {
         "chain": [
           {
-            "by": "tableCell",
-            "column": "Balance",
-            "rowContains": "Savings"
-          },
-          {
             "by": "roleName",
             "role": "cell",
             "name": "$4,320.10"
+          },
+          {
+            "by": "tableCell",
+            "column": "Balance",
+            "rowContains": "Savings"
           },
           {
             "by": "geometric",

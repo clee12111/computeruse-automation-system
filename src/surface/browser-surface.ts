@@ -249,10 +249,13 @@ export class BrowserSurface implements Surface {
           const headers = Array.from(headerRow.querySelectorAll('th, td'));
           const header = headers[colIndex]?.textContent?.trim() || '';
           if (!header) continue;
-          // Find row identifier (text from another cell in this row)
+          // Find row identifier — prefer distinctive text (non-numeric, non-ID-shaped)
           const rowTexts = allCells.filter((_, i) => i !== colIndex)
-            .map(c => c.textContent?.trim()).filter(Boolean);
-          const rowContains = rowTexts[0] || '';
+            .map(c => c.textContent?.trim() || '').filter(t => t.length > 0);
+          // Score: prefer non-numeric words like "Savings", "Checking" over IDs like "00", "12345-S1"
+          const scored = rowTexts.map(t => ({ t, score: /^[a-zA-Z]/.test(t) && !/^\d/.test(t) ? 2 : /^[0-9]{1,3}$/.test(t) ? 0 : 1 }));
+          scored.sort((a, b) => b.score - a.score);
+          const rowContains = scored[0]?.t || rowTexts[0] || '';
           return { column: header, rowContains };
         }
         return null;
