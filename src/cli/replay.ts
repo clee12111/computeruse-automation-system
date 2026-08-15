@@ -29,7 +29,8 @@ export async function runReplay(args: string[]): Promise<void> {
     }
   }
 
-  const tenant = flags.get('tenant') || 'cascade-cu';
+  const tenantRaw = flags.get('tenant') ?? 'cascade-cu';
+  const tenant = tenantRaw === 'none' ? '' : tenantRaw;
   flags.delete('tenant');
 
   // Load artifact
@@ -70,7 +71,7 @@ export async function runReplay(args: string[]): Promise<void> {
 
   const surface = new BrowserSurface({
     baseUrl,
-    tenantPrefix: `/t/${tenant}`,
+    tenantPrefix: tenant ? `/t/${tenant}` : '',
     policy: { ...policy, allowedOrigins: [baseUrl] },
     headed,
     screenshotDir: undefined, // set by journal

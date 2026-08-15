@@ -51,7 +51,8 @@ export async function runDiscover(args: string[]): Promise<void> {
   const goal = flags.get('goal');
   const app = flags.get('app') || 'console';
   const start = flags.get('start') || '/login';
-  const tenant = flags.get('tenant') || 'cascade-cu';
+  const tenantRaw = flags.get('tenant') ?? 'cascade-cu';
+  const tenant = tenantRaw === 'none' ? '' : tenantRaw;
   let llmFlag = flags.get('llm') || '';
 
   if (!name || !goal) {
@@ -105,8 +106,11 @@ export async function runDiscover(args: string[]): Promise<void> {
 
   // Surface
   const baseUrl = process.env.CONSOLE_URL || process.env.MOCK_CONSOLE_URL || 'http://localhost:3000';
-  const policy = { allowedOrigins: [baseUrl], allowedRoutes: ['/t/*'], allowedVerbs: ['click','type','select','read','navigate'] };
-  const surface = new BrowserSurface({ baseUrl, tenantPrefix: `/t/${tenant}`, policy, headed });
+  const { loadPolicy } = await import('../guardrails/policy.js');
+  const basePolicy = loadPolicy(resolve('policy.json'));
+  const policy = { ...basePolicy, allowedOrigins: [...basePolicy.allowedOrigins, baseUrl] };
+  const tenantPrefix = tenant ? `/t/${tenant}` : '';
+  const surface = new BrowserSurface({ baseUrl, tenantPrefix, policy, headed });
 
   // Journal
   const tempArtifact = {

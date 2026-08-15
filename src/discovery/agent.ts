@@ -70,7 +70,10 @@ export async function discover(config: DiscoverConfig): Promise<DiscoverResult> 
   journal.event('discovery_start', { name: contract.name, goal: contract.goal });
   const navResult = await surface.navigate(contract.startPath);
   if (!navResult.ok) {
-    return { status: 'aborted', reason: `Failed to navigate to start: ${navResult.error}` };
+    const reason = navResult.blocked
+      ? `Policy blocked: ${navResult.blocked.rule} (${navResult.blocked.attempted})`
+      : (navResult.error ?? 'unknown');
+    return { status: 'aborted', reason: `Failed to navigate to start: ${reason}` };
   }
   // Wait for page to settle, then record the initial navigation
   await new Promise(r => setTimeout(r, 300));
