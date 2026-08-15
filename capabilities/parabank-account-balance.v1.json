@@ -41,7 +41,7 @@
       },
       "risk": "safe",
       "expect": {
-        "textPresent": "Customer Login"
+        "textPresent": "About Us"
       }
     },
     {
@@ -77,7 +77,7 @@
     },
     {
       "id": "s3",
-      "intent": "Enter the provided password into the login form.",
+      "intent": "Enter the provided password in the login form.",
       "action": {
         "verb": "type",
         "value": {
@@ -108,7 +108,38 @@
     },
     {
       "id": "s4",
-      "intent": "Submit the completed login form to access the account overview.",
+      "intent": "Enter the required username in the login form.",
+      "action": {
+        "verb": "type",
+        "value": {
+          "$input": "username"
+        }
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "structural",
+            "note": "textbox #1 of 2 in main"
+          },
+          {
+            "by": "geometric",
+            "lastResort": true,
+            "x": 366,
+            "y": 314
+          }
+        ],
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "elementValue": {
+          "$self": true
+        }
+      }
+    },
+    {
+      "id": "s5",
+      "intent": "Submit the login form using the provided credentials.",
       "action": {
         "verb": "click"
       },
@@ -129,12 +160,12 @@
       },
       "risk": "safe",
       "expect": {
-        "textPresent": "Account"
+        "urlMatches": "/parabank/overview.htm"
       }
     },
     {
-      "id": "s5",
-      "intent": "Read an account balance from the accounts overview table.",
+      "id": "s6",
+      "intent": "Read the first account balance from the accounts overview.",
       "action": {
         "verb": "read",
         "parseAs": "money",
@@ -145,12 +176,12 @@
           {
             "by": "tableCell",
             "column": "Balance*",
-            "rowContains": "12345"
+            "rowContains": "13344"
           },
           {
             "by": "geometric",
             "lastResort": true,
-            "x": 671,
+            "x": 669,
             "y": 358
           }
         ],

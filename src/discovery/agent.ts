@@ -76,11 +76,26 @@ export async function discover(config: DiscoverConfig): Promise<DiscoverResult> 
     return { status: 'aborted', reason: `Failed to navigate to start: ${reason}` };
   }
   // Wait for page to settle, then record the initial navigation
-  await new Promise(r => setTimeout(r, 300));
+  await new Promise(r => setTimeout(r, 500));
   const startObs = await surface.observe();
-  // Find a prominent visible text on the page (button text, heading, etc.)
-  const prominentEl = startObs.elements.find(e => e.role === 'button' || e.role === 'heading');
-  const startPageText = prominentEl?.name || startObs.url.split('/').pop() || 'page';
+  // Find prominent VISIBLE text — headings first, then buttons, then any named element.
+  // Priority: heading > button > link > any element with text > page title.
+  // NEVER fall back to URL slugs. Verify via surface.check before recording.
+  const candidates = [
+    ...startObs.elements.filter(e => e.role === 'heading' && e.name.length > 2),
+    ...startObs.elements.filter(e => e.role === 'button' && e.name.length > 2),
+    ...startObs.elements.filter(e => e.role === 'link' && e.name.length > 3 && e.name.length < 40),
+    ...startObs.elements.filter(e => e.name.length > 3 && e.name.length < 50),
+  ];
+  let startPageText = 'page';
+  for (const el of candidates) {
+    const candidate = el.name.substring(0, 40);
+    if (await surface.check({ textPresent: candidate })) {
+      startPageText = candidate;
+      break;
+    }
+  }
+  journal.event('initial_navigate_expect', { text: startPageText, verified: startPageText !== 'page' });
   recorder.record({
     intent: `Navigate to ${contract.startPath}`,
     verb: 'navigate',

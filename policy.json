@@ -1,5 +1,5 @@
 {
-  "allowedOrigins": ["http://localhost:3000", "https://parabank.parasoft.com"],
-  "allowedRoutes": ["/t/*", "/parabank/*"],
+  "allowedOrigins": ["http://localhost:3000", "https://parabank.parasoft.com", "http://demo.testfire.net"],
+  "allowedRoutes": ["/t/*", "/parabank/*", "/login.jsp", "/bank/*", "/index.jsp", "/*.jsp"],
   "allowedVerbs": ["click", "type", "select", "read", "navigate"]
 }

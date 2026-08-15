@@ -450,16 +450,30 @@ export class BrowserSurface implements Surface {
         break;
       }
       case 'geometric': {
-        // Find element at coordinates (x, y)
+        // Find element at coordinates and store a Locator for act()
         const geo = desc as Descriptor & { x?: number; y?: number };
         if (geo.x != null && geo.y != null) {
-          const el = await frame.evaluate(({ x, y }) => {
-            const el = document.elementFromPoint(x, y);
-            return el ? true : false;
+          const elInfo = await frame.evaluate(({ x, y }) => {
+            let el = document.elementFromPoint(x, y);
+            if (!el) return null;
+            // Drill to the deepest/smallest element (skip html, body, large containers)
+            while (el.children.length === 1 && el.children[0].getBoundingClientRect().width > 0) {
+              el = el.children[0] as HTMLElement;
+            }
+            const ownText = (el.textContent || '').trim().substring(0, 60);
+            const tag = el.tagName.toLowerCase();
+            // Skip if we landed on html/body (coordinates pointed at empty space)
+            if (tag === 'html' || tag === 'body') return null;
+            return { tag, text: ownText };
           }, { x: geo.x, y: geo.y });
-          if (el) {
+          if (elInfo) {
             const ref = `r${this.refCounter++}`;
             this.elementMap.set(ref, { frame: fname, locatorDesc: `geometric:${geo.x},${geo.y}` });
+            // Create a locator targeting the element by its text content
+            if (elInfo.text) {
+              const loc = frame.locator(`${elInfo.tag}`).filter({ hasText: elInfo.text }).first();
+              this.resolvedLocators.set(ref, loc);
+            }
             return { count: 1, ref };
           }
         }
