@@ -130,7 +130,7 @@
         ],
         "reasoning": "Recorded from discovery run."
       },
-      "risk": "risky",
+      "risk": "safe",
       "expect": {
         "elementValue": {
           "$self": true

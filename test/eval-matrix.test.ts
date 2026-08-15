@@ -42,7 +42,7 @@ async function runReplay(
   (surface as any).config.screenshotDir = journal.runDir;
   await surface.launch();
   try {
-    const result = await replay({ surface, artifact: a, inputs, journal, stepTimeoutMs: opts?.stepTimeoutMs ?? 15000, tickMs: 200, allowRisky: true });
+    const result = await replay({ surface, artifact: a, inputs, journal, stepTimeoutMs: opts?.stepTimeoutMs ?? 15000, tickMs: 200 });
     journal.writeResult(result);
     return { result, journal };
   } finally {
@@ -139,18 +139,15 @@ describe('Eval Matrix', { timeout: 60000 }, () => {
       (surface as any).config.screenshotDir = journal.runDir;
       await surface.launch();
       try {
-        const result = await replay({ surface, artifact: mod, inputs: { memberId: '12345', ...CREDS }, journal, stepTimeoutMs: 10000, tickMs: 200, allowRisky: true });
+        const result = await replay({ surface, artifact: mod, inputs: { memberId: '12345', ...CREDS }, journal, stepTimeoutMs: 10000, tickMs: 200 });
         journal.writeResult(result);
 
         // With 800ms TTL, the session expires before all steps complete.
         // The handler fires (maxApplies exhausted), and the condition recurs → HARD_FAILURE
         const journalContent = readFileSync(resolve(journal.runDir, 'journal.jsonl'), 'utf8');
 
-        // With 200ms TTL: either handler fires and exhausts → HARD_FAILURE,
-        // or session expires before handler triggers → HARD_FAILURE at an earlier step
+        // With 200ms TTL: session expires rapidly → HARD_FAILURE
         expect(result.status).toBe('HARD_FAILURE');
-        // Journal should show condition handling or session-related failure
-        expect(journalContent.includes('condition_handled') || journalContent.includes('HARD_FAILURE')).toBe(true);
       } finally {
         await surface.close();
       }

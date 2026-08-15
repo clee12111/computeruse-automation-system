@@ -73,7 +73,7 @@ describe('Escalation', { timeout: 90000 }, () => {
     try {
       const result = await replay({
         surface, artifact, inputs: { memberId: '77777', ...CREDS }, journal,
-        stepTimeoutMs: 15000, tickMs: 200, allowRisky: true,
+        stepTimeoutMs: 15000, tickMs: 200,
         attended: true, channel,
       });
 
@@ -111,7 +111,7 @@ describe('Escalation', { timeout: 90000 }, () => {
     try {
       const result = await replay({
         surface, artifact, inputs: { memberId: '23456', ...CREDS }, journal,
-        stepTimeoutMs: 15000, tickMs: 200, allowRisky: true,
+        stepTimeoutMs: 15000, tickMs: 200,
         attended: true, channel,
       });
 
@@ -194,7 +194,7 @@ describe('Escalation', { timeout: 90000 }, () => {
     try {
       const result = await replay({
         surface, artifact: mod, inputs: { memberId: '12345', ...CREDS }, journal,
-        stepTimeoutMs: 10000, tickMs: 200, allowRisky: true,
+        stepTimeoutMs: 10000, tickMs: 200,
         attended: true, channel,
       });
 
@@ -223,7 +223,7 @@ describe('Escalation', { timeout: 90000 }, () => {
     try {
       await replay({
         surface, artifact, inputs: { memberId: '23456', ...CREDS }, journal,
-        stepTimeoutMs: 15000, tickMs: 200, allowRisky: true,
+        stepTimeoutMs: 15000, tickMs: 200,
         attended: true, channel,
       });
 

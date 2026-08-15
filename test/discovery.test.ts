@@ -109,7 +109,7 @@ describe('DiscoveryAgent', { timeout: 60000 }, () => {
         surface, artifact,
         inputs: { memberId: '12345', username: 'operator', password: 'demo123' },
         journal: replayJournal,
-        stepTimeoutMs: 15000, tickMs: 200, allowRisky: true,
+        stepTimeoutMs: 15000, tickMs: 200,
       });
       if (replayResult.status !== 'SUCCESS') {
         console.error('Replay failed:', JSON.stringify(replayResult, null, 2));

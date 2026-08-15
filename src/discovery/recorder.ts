@@ -26,14 +26,12 @@ export interface LedgerEntry {
 const RISKY_BUTTON_PATTERN = /submit|open|confirm|execute|post|authorize/i;
 
 function assignRisk(entry: LedgerEntry): 'safe' | 'risky' {
-  // Click on button whose name matches risky pattern
+  // Risky = irreversible actions ONLY (not sensitive inputs like passwords)
+  // Click on button whose name matches irreversible-action pattern
   if (entry.verb === 'click' && entry.targetName && RISKY_BUTTON_PATTERN.test(entry.targetName)) {
     return 'risky';
   }
-  // Type into password field
-  if (entry.verb === 'type' && entry.targetIsPassword) {
-    return 'risky';
-  }
+  // Password typing is SENSITIVE (handled by redaction), NOT risky
   return 'safe';
 }
 

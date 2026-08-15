@@ -20,11 +20,9 @@ export async function runReplay(args: string[]): Promise<void> {
   const flags = new Map<string, string>();
   let headed = false;
   let attended = false;
-  let allowRisky = false;
   for (let i = 1; i < args.length; i++) {
     if (args[i] === '--headed') { headed = true; continue; }
     if (args[i] === '--attended') { attended = true; headed = true; continue; }
-    if (args[i] === '--allow-risky') { allowRisky = true; continue; }
     if (args[i].startsWith('--') && i + 1 < args.length) {
       flags.set(args[i].slice(2), args[i + 1]);
       i++;
@@ -94,7 +92,7 @@ export async function runReplay(args: string[]): Promise<void> {
       channel = new TerminalChannel();
     }
 
-    const result = await replay({ surface, artifact, inputs, journal, stepTimeoutMs: 30000, tickMs: 250, attended, channel, allowRisky });
+    const result = await replay({ surface, artifact, inputs, journal, stepTimeoutMs: 30000, tickMs: 250, attended, channel });
 
     // Add sensitive output values to redactor before writing result
     if (result.status === 'SUCCESS') {

@@ -1,6 +1,6 @@
-// test/transfer.test.ts — Transfer-funds capability + risky gate + side effects.
+// test/transfer.test.ts — Transfer-funds capability + trust gate + side effects.
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { type ChildProcess, spawn } from 'node:child_process';
 import { resolve } from 'node:path';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -8,7 +8,7 @@ import { BrowserSurface } from '../src/surface/browser-surface.js';
 import { replay } from '../src/replay/engine.js';
 import { loadArtifact } from '../src/schema/loader.js';
 import { RunJournal } from '../src/evidence/journal.js';
-import { ScriptedChannel } from '../src/escalation/intervention.js';
+import { approveCapability, saveTrust } from '../src/guardrails/trust.js';
 import type { CapabilityArtifact } from '../src/schema/artifact.js';
 import type { Policy } from '../src/surface/surface.js';
 
@@ -33,10 +33,7 @@ async function waitForServer(maxMs = 8000): Promise<void> {
   throw new Error('Mock console did not start');
 }
 
-async function runReplay(
-  inputs: Record<string, string>,
-  opts?: { allowRisky?: boolean; attended?: boolean; channel?: import('../src/escalation/intervention.js').EscalationChannel },
-) {
+async function runReplay(inputs: Record<string, string>, opts?: { attended?: boolean; channel?: any }) {
   const surface = new BrowserSurface({ baseUrl: BASE, tenantPrefix: PREFIX, policy, headed: false });
   const journal = new RunJournal(resolve('evidence/runs'), artifact, inputs);
   (surface as any).config.screenshotDir = journal.runDir;
@@ -45,7 +42,6 @@ async function runReplay(
     const result = await replay({
       surface, artifact, inputs, journal,
       stepTimeoutMs: 15000, tickMs: 200,
-      allowRisky: opts?.allowRisky,
       attended: opts?.attended, channel: opts?.channel,
     });
     journal.writeResult(result);
@@ -65,73 +61,92 @@ beforeAll(async () => {
 
 afterAll(() => { server?.kill(); });
 
-describe('Transfer Funds', { timeout: 60000 }, () => {
+beforeEach(() => {
+  // Reset trust before each test
+  saveTrust({});
+});
 
-  it('artifact has risky steps', () => {
+describe('Transfer Funds — Trust Lifecycle', { timeout: 60000 }, () => {
+
+  it('artifact has exactly one risky step (Execute Transfer, not password)', () => {
     const riskySteps = artifact.steps.filter(s => s.risk === 'risky');
-    expect(riskySteps.length).toBeGreaterThan(0);
-    // s13 (Execute Transfer) should be risky
-    const execStep = artifact.steps.find(s => s.id === 's13');
-    expect(execStep?.risk).toBe('risky');
+    expect(riskySteps.length).toBe(1);
+    expect(riskySteps[0].id).toBe('s13');
+    expect(riskySteps[0].intent).toContain('Execute');
+    // Password step is safe (sensitive ≠ risky)
+    const pwStep = artifact.steps.find(s => s.intent.includes('password'));
+    expect(pwStep?.risk).toBe('safe');
   });
 
-  it('RISKY GATE: unattended, no --allow-risky → stops before risky step', async () => {
+  it('TRUST GATE: manual trust → stops AT risky step (balances unchanged)', async () => {
+    // Trust is manual (default) — should stop before Execute Transfer
     const { result } = await runReplay({
-      memberId: '12345', fromAccount: '12345-S1', toAccount: '12345-C1', amount: '10.00', ...CREDS,
+      memberId: '12345', fromAccount: '12345-S1', toAccount: '12345-C1', amount: '50.00', ...CREDS,
     });
 
     expect(result.status).toBe('HARD_FAILURE');
     if (result.status === 'HARD_FAILURE') {
-      // Should stop at s3 (password type, risky) or s13 (Execute Transfer, risky)
-      expect(result.observed).toContain('Risky step');
-      expect(result.observed).toContain('--allow-risky');
+      expect(result.stepId).toBe('s13'); // stopped AT Execute Transfer
+      expect(result.observed).toContain('not approved');
     }
+
+    // Verify NO transfer occurred — check audit via HTTP
+    const loginRes = await fetch(`${BASE}${PREFIX}/login`, {
+      method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: 'f1=operator&f2=demo123', redirect: 'manual',
+    });
+    const cookie = (loginRes.headers.get('set-cookie') ?? '').split(';')[0];
+    const auditRes = await fetch(`${BASE}${PREFIX}/audit`, { headers: { cookie } });
+    const auditBody = await auditRes.text();
+    // No TRANSFER row should exist (only LOGIN from the replay + our check)
+    expect(auditBody).not.toContain('TRANSFER');
   });
 
-  it('transfer with --allow-risky → SUCCESS with reference number', async () => {
+  it('APPROVE then replay → SUCCESS + side effects', async () => {
+    // Approve the capability
+    const entry = approveCapability('transfer-funds', '1.0.0', 'Test approval');
+    expect(entry.status).toBe('approved');
+
+    // Now replay — should proceed through the risky step
     const { result, journal } = await runReplay({
-      memberId: '12345', fromAccount: '12345-S1', toAccount: '12345-C1', amount: '10.00', ...CREDS,
-    }, { allowRisky: true });
+      memberId: '12345', fromAccount: '12345-S1', toAccount: '12345-C1', amount: '50.00', ...CREDS,
+    });
 
     expect(result.status).toBe('SUCCESS');
-    // Transfer confirmation page reached — the transfer executed
-    // Reference number is visible in the evidence screenshot
+
+    // Check journal has risky_step_executed event
+    const journalContent = readFileSync(resolve(journal.runDir, 'journal.jsonl'), 'utf8');
+    expect(journalContent).toContain('risky_step_executed');
+
+    // Verify transfer side effects via HTTP
+    const loginRes = await fetch(`${BASE}${PREFIX}/login`, {
+      method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: 'f1=operator&f2=demo123', redirect: 'manual',
+    });
+    const cookie = (loginRes.headers.get('set-cookie') ?? '').split(';')[0];
+    const auditRes = await fetch(`${BASE}${PREFIX}/audit`, { headers: { cookie } });
+    expect(await auditRes.text()).toContain('TRANSFER');
   });
 
-  it('SIDE EFFECTS: transfer creates audit row', async () => {
-    // Run a transfer first, then check the audit
-    const { result } = await runReplay({
-      memberId: '12345', fromAccount: '12345-S1', toAccount: '12345-C1', amount: '1.00', ...CREDS,
-    }, { allowRisky: true });
-
-    // Only check side effects if the transfer succeeded
-    if (result.status === 'SUCCESS') {
-      const loginRes = await fetch(`${BASE}${PREFIX}/login`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: 'f1=operator&f2=demo123',
-        redirect: 'manual',
-      });
-      const cookie = (loginRes.headers.get('set-cookie') ?? '').split(';')[0];
-      const auditRes = await fetch(`${BASE}${PREFIX}/audit`, { headers: { cookie } });
-      const auditBody = await auditRes.text();
-      expect(auditBody).toContain('TRANSFER');
-    }
-    // Transfer may fail at password step (risky) if gate isn't working;
-    // the main assertion is the transfer test above
-    expect(['SUCCESS', 'HARD_FAILURE']).toContain(result.status);
+  it('version bump resets trust', async () => {
+    approveCapability('transfer-funds', '1.0.0', 'Approved');
+    const { getTrustStatus } = await import('../src/guardrails/trust.js');
+    expect(getTrustStatus('transfer-funds', '1.0.0').status).toBe('approved');
+    // Different version → manual (not carried over)
+    expect(getTrustStatus('transfer-funds', '1.1.0').status).toBe('manual');
   });
 
   it('REDACTION: credentials absent from transfer evidence', async () => {
+    approveCapability('transfer-funds', '1.0.0');
     const { result, journal } = await runReplay({
       memberId: '12345', fromAccount: '12345-S1', toAccount: '12345-C1', amount: '5.00', ...CREDS,
-    }, { allowRisky: true });
+    });
 
     if (result.status === 'SUCCESS') {
       const files = readdirSync(journal.runDir);
       for (const file of files) {
         const content = readFileSync(resolve(journal.runDir, file), 'utf8');
-        expect(content).not.toContain('demo123'); // password
+        expect(content).not.toContain('demo123');
       }
     }
   });

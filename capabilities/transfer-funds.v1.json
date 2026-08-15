@@ -102,7 +102,7 @@
         ],
         "reasoning": "Login form password field."
       },
-      "risk": "risky",
+      "risk": "safe",
       "expect": {
         "elementValue": {
           "$self": true

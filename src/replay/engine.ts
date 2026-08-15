@@ -7,6 +7,7 @@ import type { ReplayResult, InterventionRequest } from '../schema/results.js';
 import type { Surface, ResolveResult } from '../surface/surface.js';
 import type { RunJournal } from '../evidence/journal.js';
 import type { EscalationChannel, HandbackClaim } from '../escalation/intervention.js';
+import { getTrustStatus } from '../guardrails/trust.js';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -26,7 +27,6 @@ export interface EngineConfig {
   tickMs?: number;         // default 250
   attended?: boolean;       // attended mode: escalate instead of hard-fail
   channel?: EscalationChannel; // the escalation channel (required if attended)
-  allowRisky?: boolean;    // permit execution of risky steps (default false)
 }
 
 // ── Pre-flight: validate inputs BEFORE launching browser ────
@@ -133,23 +133,25 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
     stepRetry = false;
     journal.stepStart(step.id, step.intent);
 
-    // ── RISKY GATE ──────────────────────────────────────
-    if (step.risk === 'risky' && !config.allowRisky && !approvedRiskySteps.has(step.id)) {
-      if (config.attended && config.channel) {
-        // In attended mode: pause for approval
+    // ── RISKY GATE (trust lifecycle) ────────────────────
+    if (step.risk === 'risky' && !approvedRiskySteps.has(step.id)) {
+      const trust = getTrustStatus(artifact.name, artifact.version);
+      if (trust.status === 'approved') {
+        // Trusted: proceed but log loudly
+        journal.event('risky_step_executed', { stepId: step.id, trustStatus: 'approved', approvedBy: trust.approvedBy });
+      } else if (config.attended && config.channel) {
+        // Manual + attended: pause for approval
         const ss = await captureFailure(surface, journal);
-        const riskyEsc = await escalateOrFail(step, `Risky step ${step.id} requires approval (--allow-risky or attended approval)`, ss, config, outputs);
+        const riskyEsc = await escalateOrFail(step, `Risky step ${step.id}: capability not approved for unattended execution`, ss, config, outputs);
         if (riskyEsc.action === 'retry') { approvedRiskySteps.add(step.id); stepRetry = true; break; }
         if (riskyEsc.action === 'skip') break;
-        // 'approve' claim: allow this step to proceed
-        if (riskyEsc.action === 'return' && riskyEsc.result.status === 'ESCALATED') return riskyEsc.result;
-        return riskyEsc.result;
+        if (riskyEsc.action === 'return') return riskyEsc.result;
       } else {
-        // Unattended: stop BEFORE the risky step
+        // Manual + unattended: stop AT the risky step
         return {
           status: 'HARD_FAILURE', stepId: step.id,
           expected: JSON.stringify(step.expect),
-          observed: `Risky step ${step.id} requires --allow-risky`,
+          observed: `Risky step ${step.id}: capability not approved for unattended execution`,
           evidenceRefs: [],
         };
       }
