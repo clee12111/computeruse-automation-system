@@ -361,6 +361,140 @@ const MEMBERS = {
     }),
 };
 
+// ── Deterministic bulk member generator (seeded PRNG) ───────
+// Adds ~135 members (IDs 60000-60134) without touching existing 16.
+// Seeded mulberry32 — no Date.now, no Math.random.
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+(function generateBulkMembers() {
+  const rng = mulberry32(42);
+  const pick = (arr) => arr[Math.floor(rng() * arr.length)];
+  const rInt = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
+  const rDec = (lo, hi) => Math.round((lo + rng() * (hi - lo)) * 100) / 100;
+
+  const FIRST = ['James','Mary','Robert','Patricia','John','Jennifer','Michael','Linda','David','Elizabeth',
+    'William','Barbara','Richard','Susan','Joseph','Jessica','Thomas','Sarah','Christopher','Karen',
+    'Charles','Lisa','Daniel','Nancy','Matthew','Sandra','Anthony','Betty','Mark','Margaret',
+    'Andrew','Ashley','Steven','Dorothy','Kevin','Kimberly','Brian','Emily','George','Donna',
+    'Timothy','Michelle','Ronald','Carol','Jason','Amanda','Jeffrey','Melissa','Ryan','Deborah',
+    'Jacob','Stephanie','Gary','Rebecca','Nicholas','Sharon','Eric','Laura','Stephen','Cynthia',
+    'Jonathan','Kathleen','Larry','Amy','Justin','Angela','Scott','Shirley','Brandon','Brenda'];
+  const LAST = ['Thompson','Thompson','Thompson','Thompson','Thompson','Thompson', // 6+ Thompsons (+ 2 existing = 8 total)
+    'Chen','Chen','Chen','Chen', // 4 Chens (+ 1 existing = 5)
+    'Garcia','Garcia','Garza','Garza', // similar-sounding
+    'Smith','Johnson','Williams','Brown','Jones','Miller','Davis','Wilson','Moore','Taylor',
+    'Anderson','Thomas','Jackson','White','Harris','Martin','Lewis','Robinson','Clark','Walker',
+    'Hall','Allen','Young','King','Wright','Lopez','Hill','Scott','Green','Adams','Baker',
+    'Nelson','Carter','Mitchell','Perez','Roberts','Turner','Phillips','Campbell','Parker','Evans',
+    'Nguyen','Rivera','Foster','Kim','Ortiz','Walsh','Hale','Park','Rivera','Cheng','Cheng'];
+  const STREETS = ['Oak St','Pine Ave','Elm Blvd','Cedar Ln','Maple Dr','Birch Dr','Spruce Way',
+    'Walnut St','Alder Ct','Willow Ln','Ash St','Poplar Ave','Hickory Rd','Juniper Way','Fir Ct',
+    'Sycamore Dr','Cherry Ln','Magnolia Blvd','Laurel St','Hazel Ave'];
+  const CITIES = ['Portland','Portland','Portland','Portland','Beaverton','Beaverton','Tigard','Tigard',
+    'Lake Oswego','Gresham','Hillsboro','Milwaukie','West Linn','Tualatin','Oregon City',
+    'Wilsonville','Sherwood','Happy Valley','Clackamas','Canby'];
+  const CWORDS = ['cascade','mountain','river','summit','valley','bridge','forest','harbor','meadow',
+    'sunset','eagle','cedar','granite','willow','aspen','redwood','sequoia','birch','maple','pine',
+    'spruce','hemlock','juniper','alder','cypress','laurel','sage','fern','ivy','holly'];
+  const ACCT_TYPES = ['Savings','Checking','Money Market','CD'];
+  const LOAN_TYPES = ['Auto Loan','Personal Loan','Home Equity','Mortgage'];
+  const ALERTS = [null,null,null,null,null,null,null,null, // mostly no alert
+    'Address verification pending',
+    'Under review for recent address change',
+    'Account restricted \u2014 supervisor review required',
+    'Account restricted \u2014 supervisor review required',
+    'Account restricted \u2014 supervisor review required',
+    'Account restricted \u2014 supervisor review required',
+    'Pending employment verification',
+    'Tax ID mismatch — contact member'];
+  // Golden-value-adjacent balances (near $4,320.10)
+  const GOLDEN_BALANCES = [4318.50, 4321.75, 4319.99, 4320.10, 4322.00, 4315.80, 4325.00, 4310.55, 4330.20, 4317.90];
+
+  for (let i = 0; i < 135; i++) {
+    const id = String(60000 + i);
+    const firstName = pick(FIRST);
+    const lastName = pick(LAST);
+    const name = `${firstName} ${lastName}`;
+    const mo = String(rInt(1,12)).padStart(2,'0');
+    const dy = String(rInt(1,28)).padStart(2,'0');
+    const yr = rInt(1955,2000);
+    const dob = `${mo}/${dy}/${yr}`;
+    const phone = `(${rInt(503,971)}) 555-${String(rInt(1000,9999))}`;
+    const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@email.com`;
+    const memberSince = `${String(rInt(1,12)).padStart(2,'0')}/${String(rInt(1,28)).padStart(2,'0')}/${rInt(2010,2025)}`;
+    const ssnLast4 = String(rInt(1000,9999));
+    const street = `${rInt(100,9999)} ${pick(STREETS)}`;
+    const city = pick(CITIES);
+    const codeWord = pick(CWORDS);
+
+    // Determine density: ~30 dense (5-8 accounts), rest 2-4
+    const isDense = i < 30;
+    const numAccts = isDense ? rInt(5,8) : rInt(2,4);
+    const alert = i < 15 ? pick(ALERTS.filter(a => a !== null)) : (rng() < 0.08 ? pick(ALERTS) : null);
+
+    // Build accounts
+    const accounts = [];
+    const shareIds = ['00','01','02','03','10','11','20','21'];
+    for (let a = 0; a < numAccts; a++) {
+      const type = a === 0 ? 'Savings' : a === 1 ? 'Checking' : pick(ACCT_TYPES);
+      const sId = shareIds[a] || String(a).padStart(2,'0');
+      const suffix = type === 'Savings' ? 'S' : type === 'Checking' ? 'C' : type === 'Money Market' ? 'M' : 'D';
+      const acctNum = `${id}-${suffix}${a < 2 ? '1' : String(a)}`;
+      // Use golden-adjacent balance on ~10 members' savings
+      let balance;
+      if (type === 'Savings' && i < 10) {
+        balance = GOLDEN_BALANCES[i];
+      } else {
+        balance = rDec(50, type === 'CD' ? 25000 : type === 'Money Market' ? 20000 : 15000);
+      }
+      const txCount = isDense ? rInt(40, 120) : rInt(15, 40);
+      const opened = `${String(rInt(1,12)).padStart(2,'0')}/${String(rInt(1,28)).padStart(2,'0')}/${rInt(2014,2025)}`;
+      accounts.push(mkAcct(type, acctNum, sId, balance, opened,
+        genTxs(type, txCount, (60000 + i) * 7 + a * 13),
+        { available: type === 'CD' ? 0 : balance, status: 'Active' }));
+    }
+
+    // Loans on ~40 members
+    const loans = [];
+    if (i < 40 || rng() < 0.15) {
+      const numLoans = rInt(1, i < 10 ? 3 : 1);
+      for (let l = 0; l < numLoans; l++) {
+        const lType = pick(LOAN_TYPES);
+        const lBal = rDec(1000, lType === 'Mortgage' ? 200000 : lType === 'Home Equity' ? 50000 : 20000);
+        const rate = rDec(3.5, lType === 'Mortgage' ? 7.0 : lType === 'Personal Loan' ? 10.0 : 6.5);
+        const monthly = Math.round(lBal * 0.008 * 100) / 100;
+        // Delinquent: ~8 members
+        const isDelinquent = i >= 30 && i < 38;
+        const nextDue = isDelinquent
+          ? `${String(rInt(5,7)).padStart(2,'0')}/01/2026`
+          : `09/${String(rInt(1,28)).padStart(2,'0')}/2026`;
+        loans.push({
+          loanId: `L-${id}-${String(l+1).padStart(2,'0')}`,
+          type: lType, balance: lBal, rate,
+          nextPaymentDue: nextDue, monthlyPayment: monthly,
+          opened: `${String(rInt(1,12)).padStart(2,'0')}/01/${rInt(2019,2025)}`,
+          status: 'Active',
+          payments: Array.from({length: rInt(2,5)}, (_, pi) => ({
+            date: `${String(rInt(3,8)).padStart(2,'0')}/01/2026`,
+            amount: monthly, ref: `LP-${4100 + i * 10 + l * 5 + pi}`,
+          })),
+        });
+      }
+    }
+
+    MEMBERS[id] = mkMember(name, dob, phone, email, memberSince, ssnLast4,
+      { street, city, state: 'OR', zip: String(rInt(97001,97299)) }, codeWord,
+      { alert, accounts, loans });
+  }
+})();
+
 // ── Audit log ───────────────────────────────────────────────
 const auditLog = [];
 
