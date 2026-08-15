@@ -218,10 +218,16 @@
           "if": {
             "textPresent": "Compliance Notice"
           },
-          "do": {
-            "verb": "click",
-            "targetName": "Continue"
-          },
+          "do": [
+            {
+              "verb": "click",
+              "targetName": "checkbox:compliance"
+            },
+            {
+              "verb": "click",
+              "targetName": "Continue"
+            }
+          ],
           "maxApplies": 2
         }
       ]

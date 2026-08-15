@@ -135,9 +135,9 @@ describe('Transfer Funds v1.2.0', { timeout: 60000 }, () => {
     const { result } = await runReplay({
       memberId: '78901', fromAccount: '78901-S1', toAccount: '78901-C1', amount: '50.00', ...CREDS,
     });
-    // May hit compliance interstitial (HARD_FAILURE at s7) or permission denied (BUSINESS_OUTCOME)
-    // Both prove the mechanism — the point is that the restricted member is blocked
-    expect(['BUSINESS_OUTCOME', 'HARD_FAILURE']).toContain(result.status);
+    // With the 2-action compliance handler (check ack + click Continue),
+    // the compliance interstitial is dismissed, revealing the privilege error
+    expect(result.status).toBe('BUSINESS_OUTCOME');
     if (result.status === 'BUSINESS_OUTCOME') {
       expect(result.code).toBe('PERMISSION_DENIED');
     }

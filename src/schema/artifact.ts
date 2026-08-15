@@ -97,8 +97,8 @@ export const ActionSchema = z.object({
 export type Action = z.infer<typeof ActionSchema>;
 
 // ── Condition handlers ──────────────────────────────────────
-// "handlers = 1 action max" — do is a single object, not an array.
-// This structurally forbids 2 actions.
+// Extended to 1-2 actions (DESIGN_MAP: "extend only by demonstrated need" —
+// demonstrated by the checkbox+Continue compliance interstitial pattern).
 
 export const HandlerActionSchema = z.object({
   verb: z.enum(['click', 'type', 'select', 'read', 'navigate']),
@@ -108,7 +108,7 @@ export type HandlerAction = z.infer<typeof HandlerActionSchema>;
 
 export const ConditionHandlerSchema = z.object({
   if: PredicateSchema,
-  do: HandlerActionSchema,
+  do: z.union([HandlerActionSchema, z.tuple([HandlerActionSchema, HandlerActionSchema])]),
   maxApplies: z.number().int().positive(),
 });
 export type ConditionHandler = z.infer<typeof ConditionHandlerSchema>;

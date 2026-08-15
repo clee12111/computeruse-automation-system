@@ -110,15 +110,16 @@ describe('schema validation', () => {
     expect(relevant).toBeDefined();
   });
 
-  it('rejects handler with 2 actions (do as array)', () => {
+  it('rejects handler with 3 actions (do as oversized array)', () => {
     const data = mutate(d => {
       (d.steps as any[])[1].onCondition[0].do = [
         { verb: 'click', targetName: 'A' },
         { verb: 'click', targetName: 'B' },
+        { verb: 'click', targetName: 'C' },
       ];
     });
     const errs = expectZodFail(data);
-    const relevant = errs.find(e => e.includes('do') || e.includes('object'));
+    const relevant = errs.find(e => e.includes('do') || e.includes('Expected'));
     expect(relevant).toBeDefined();
   });
 

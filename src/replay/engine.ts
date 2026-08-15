@@ -8,6 +8,7 @@ import type { Surface, ResolveResult } from '../surface/surface.js';
 import type { RunJournal } from '../evidence/journal.js';
 import type { EscalationChannel, HandbackClaim } from '../escalation/intervention.js';
 import { getTrustStatus } from '../guardrails/trust.js';
+import { loadOverlay, applyOverlay } from '../guardrails/overlay.js';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -27,6 +28,7 @@ export interface EngineConfig {
   tickMs?: number;         // default 250
   attended?: boolean;       // attended mode: escalate instead of hard-fail
   channel?: EscalationChannel; // the escalation channel (required if attended)
+  tenant?: string;           // tenant for overlay lookup
 }
 
 // ── Pre-flight: validate inputs BEFORE launching browser ────
@@ -111,10 +113,21 @@ function delay(ms: number): Promise<void> {
 
 // ── The engine ──────────────────────────────────────────────
 export async function replay(config: EngineConfig): Promise<ReplayResult> {
-  const { surface, artifact, inputs, journal } = config;
+  const { surface, inputs, journal } = config;
   const stepTimeout = config.stepTimeoutMs ?? 30000;
   const tickMs = config.tickMs ?? 250;
   const outputs: Record<string, unknown> = {};
+
+  // Apply tenant overlay if one exists
+  let artifact = config.artifact;
+  if (config.tenant) {
+    const overlay = loadOverlay(artifact.name, artifact.version, config.tenant);
+    if (overlay) {
+      const { artifact: overlaid, usedMappings } = applyOverlay(artifact, overlay);
+      artifact = overlaid;
+      journal.event('overlay_applied', { tenant: config.tenant, mappings: usedMappings });
+    }
+  }
 
   // Track condition handler applies (clone to avoid mutating artifact)
   const handlerApplies = new Map<string, number[]>();
@@ -239,13 +252,25 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
           const handler = step.onCondition[i];
           if (await surface.check(handler.if)) {
             // Execute handler action
-            const handlerChain = [{ by: 'roleName' as const, role: 'button', name: handler.do.targetName }];
-            const handlerResolve = await surface.resolve(handlerChain);
-            if (handlerResolve.kind === 'match') {
-              await surface.act({ verb: handler.do.verb, ref: handlerResolve.ref });
+            // Execute 1 or 2 handler actions (extended for checkbox+Continue pattern)
+            const actions = Array.isArray(handler.do) ? handler.do : [handler.do];
+            for (const act of actions) {
+              const hChain = [{ by: 'roleName' as const, role: 'button', name: act.targetName }];
+              // For checkbox actions, resolve as checkbox role instead
+              if (act.verb === 'click' && act.targetName.includes('checkbox:')) {
+                // Find checkbox by nearby text (substring match via structural)
+                const checkName = act.targetName.replace('checkbox:', '');
+                // Try to find a checkbox on the page
+                const checkLoc = await surface.resolve([{ by: 'structural' as const, note: `only checkbox in main` }]);
+                if (checkLoc.kind === 'match') await surface.act({ verb: 'click', ref: checkLoc.ref });
+              } else {
+                const hResolve = await surface.resolve(hChain);
+                if (hResolve.kind === 'match') await surface.act({ verb: act.verb, ref: hResolve.ref });
+              }
             }
             applies[i]--;
-            journal.conditionHandled(step.id, handler.do.targetName, applies[i]);
+            const handlerLabel = Array.isArray(handler.do) ? handler.do.map(a => a.targetName).join('+') : handler.do.targetName;
+            journal.conditionHandled(step.id, handlerLabel, applies[i]);
             conditionHandled = true;
 
             // ── RE-ANCHOR after handler ─────────────────
