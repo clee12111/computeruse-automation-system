@@ -415,6 +415,36 @@ export class BrowserSurface implements Surface {
             }
             return { count: 0, ref: null };
           }
+          // Pattern: "cell containing <prefix>" — finds LEAF cells whose own text starts with prefix
+          const containsMatch = desc.note.match(/^cell containing (.+)$/);
+          if (containsMatch) {
+            const prefix = containsMatch[1];
+            // Use evaluate to find cells by direct text content (not descendant text)
+            const count = await frame.evaluate((pfx) => {
+              return Array.from(document.querySelectorAll('td, th'))
+                .filter(el => el.children.length === 0 || !el.querySelector('td, th'))
+                .filter(el => (el.textContent?.trim() ?? '').startsWith(pfx))
+                .length;
+            }, prefix);
+            if (count === 1) {
+              locator = frame.locator(`td:text-is("${prefix}"), th:text-is("${prefix}")`);
+              // fallback: use evaluate to get the element
+              const handle = await frame.evaluateHandle((pfx) => {
+                return Array.from(document.querySelectorAll('td, th'))
+                  .filter(el => el.children.length === 0 || !el.querySelector('td, th'))
+                  .find(el => (el.textContent?.trim() ?? '').startsWith(pfx));
+              }, prefix);
+              if (handle) {
+                const ref = `r${this.refCounter++}`;
+                // Convert JSHandle to Locator via page
+                const loc = frame.locator('td, th').filter({ hasText: new RegExp('^' + prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) });
+                this.elementMap.set(ref, { frame: fname, locatorDesc: `structural:${desc.note}` });
+                this.resolvedLocators.set(ref, loc.first());
+                return { count: 1, ref };
+              }
+            }
+            return { count, ref: null };
+          }
           return { count: 0, ref: null };
         }
         break;

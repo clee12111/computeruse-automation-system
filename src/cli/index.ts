@@ -95,6 +95,7 @@ if (command === 'discover') {
   console.log(`  Success count: ${dossier.successCount}`);
   console.log(`  Success rate:  ${dossier.successRate}`);
   console.log(`  Interventions: ${dossier.interventionCount}`);
+  console.log(`  Gate stops:    ${dossier.gateStops}`);
   console.log(`  Note:          ${dossier.note}`);
 } else {
   console.error(`Unknown command: ${command}`);

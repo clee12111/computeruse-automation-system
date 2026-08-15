@@ -56,6 +56,7 @@ export interface TrustDossier {
   runCount: number;
   successCount: number;
   interventionCount: number;
+  gateStops: number;      // trust-gate stops (governance working, not capability failing)
   successRate: string;
   note: string;
 }
@@ -63,10 +64,10 @@ export interface TrustDossier {
 export function computeDossier(name: string, version: string): TrustDossier {
   const runsDir = resolve('evidence/runs');
   if (!existsSync(runsDir)) {
-    return { runCount: 0, successCount: 0, interventionCount: 0, successRate: 'N/A', note: 'no runs recorded' };
+    return { runCount: 0, successCount: 0, interventionCount: 0, gateStops: 0, successRate: 'N/A', note: 'no runs recorded' };
   }
 
-  let runs = 0, successes = 0, interventions = 0;
+  let runs = 0, successes = 0, interventions = 0, gateStops = 0;
   try {
     const dirs = readdirSync(runsDir).filter(d => d.includes(name));
     for (const dir of dirs) {
@@ -74,6 +75,11 @@ export function computeDossier(name: string, version: string): TrustDossier {
       if (!existsSync(resultPath)) continue;
       try {
         const resultText = readFileSync(resultPath, 'utf8');
+        // Exclude trust-gate stops from run count (governance working ≠ capability failing)
+        if (resultText.includes('not approved for unattended execution')) {
+          gateStops++;
+          continue;
+        }
         runs++;
         if (resultText.includes('"SUCCESS"') || resultText.includes('"status":"SUCCESS"')) successes++;
         const journalPath = join(runsDir, dir, 'journal.jsonl');
@@ -90,7 +96,8 @@ export function computeDossier(name: string, version: string): TrustDossier {
     runCount: runs,
     successCount: successes,
     interventionCount: interventions,
+    gateStops,
     successRate: rate,
-    note: runs === 0 ? 'no runs recorded' : `${runs} runs, ${successes} successes`,
+    note: runs === 0 ? 'no runs recorded' : `${runs} runs, ${successes} successes${gateStops ? `, ${gateStops} gate stops` : ''}`,
   };
 }

@@ -1,6 +1,6 @@
 {
   "name": "transfer-funds",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "app": {
     "id": "cascade-cu-console",
     "startPath": "/login"
@@ -33,8 +33,24 @@
       "sensitive": true
     }
   },
-  "outputs": {},
-  "businessOutcomes": {},
+  "outputs": {
+    "referenceNumber": {
+      "type": "string",
+      "sensitive": false
+    }
+  },
+  "businessOutcomes": {
+    "PERMISSION_DENIED": {
+      "detect": {
+        "textPresent": "Insufficient privileges"
+      }
+    },
+    "INSUFFICIENT_FUNDS": {
+      "detect": {
+        "textPresent": "Insufficient funds"
+      }
+    }
+  },
   "steps": [
     {
       "id": "s1",
@@ -196,7 +212,19 @@
       "risk": "safe",
       "expect": {
         "textPresent": "Member Details"
-      }
+      },
+      "onCondition": [
+        {
+          "if": {
+            "textPresent": "Compliance Notice"
+          },
+          "do": {
+            "verb": "click",
+            "targetName": "Continue"
+          },
+          "maxApplies": 2
+        }
+      ]
     },
     {
       "id": "s8",
@@ -216,7 +244,14 @@
       },
       "risk": "safe",
       "expect": {
-        "textPresent": "Transfer Funds"
+        "anyOf": [
+          {
+            "textPresent": "Transfer Funds"
+          },
+          {
+            "$outcome": "PERMISSION_DENIED"
+          }
+        ]
       }
     },
     {
@@ -315,7 +350,14 @@
       },
       "risk": "safe",
       "expect": {
-        "textPresent": "Review Transfer"
+        "anyOf": [
+          {
+            "textPresent": "Execute Transfer"
+          },
+          {
+            "$outcome": "INSUFFICIENT_FUNDS"
+          }
+        ]
       }
     },
     {
@@ -337,6 +379,28 @@
       "risk": "risky",
       "expect": {
         "textPresent": "Transfer Complete"
+      }
+    },
+    {
+      "id": "s14",
+      "intent": "Read the transfer reference number",
+      "action": {
+        "verb": "read",
+        "parseAs": "string",
+        "saveTo": "referenceNumber"
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "structural",
+            "note": "cell containing REF-"
+          }
+        ],
+        "reasoning": "Reference number cell identified by its REF- prefix text content."
+      },
+      "risk": "safe",
+      "expect": {
+        "outputPopulated": "referenceNumber"
       }
     }
   ]
