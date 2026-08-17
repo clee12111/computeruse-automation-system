@@ -112,7 +112,7 @@ export async function runDiscover(args: string[]): Promise<void> {
   // Surface
   const baseUrl = process.env.CONSOLE_URL || process.env.MOCK_CONSOLE_URL || 'http://localhost:3000';
   const { loadPolicy } = await import('../guardrails/policy.js');
-  const basePolicy = loadPolicy(resolve('policy.json'));
+  const basePolicy = loadPolicy(resolve('config/policy.json'));
   const policy = { ...basePolicy, allowedOrigins: [...basePolicy.allowedOrigins, baseUrl] };
   const tenantPrefix = tenant ? `/t/${tenant}` : '';
   const surface = new BrowserSurface({ baseUrl, tenantPrefix, policy, headed });

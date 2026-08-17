@@ -303,7 +303,7 @@ export async function discover(config: DiscoverConfig): Promise<DiscoverResult> 
 
         // Create a self-replay surface with the same config
         const baseUrl = surface.getBaseUrl();
-        const basePolicy = loadPolicy(resolvePath('policy.json'));
+        const basePolicy = loadPolicy(resolvePath('config/policy.json'));
         const selfSurface = new BrowserSurface({
           baseUrl,
           tenantPrefix: (surface as any).config.tenantPrefix || '',

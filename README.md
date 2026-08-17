@@ -21,7 +21,9 @@ npm run console &                       # operator console on :4000
 Open http://localhost:4000 — runs, tools, and sites are ready.
 
 - **:4000** — the **operator console**. Start here: ask, teach, approve, debug.
-- **:3000** — the **mock bank websites** (the target being automated). Must be running; no internet needed.
+- **:3000** — the **mock bank console** (the target being automated). Two tenants, one product:
+  - [localhost:3000/t/cascade-cu/login](http://localhost:3000/t/cascade-cu/login) — **Cascade Credit Union** (member/share vocabulary)
+  - [localhost:3000/t/harborview/login](http://localhost:3000/t/harborview/login) — **Harborview Community Bank** (customer/account vocabulary)
 - The OpenAI key is needed **only** for teaching new tools (discovery). Replay, seeding, and all tests run without it.
 - Secrets live in `.env` only (gitignored) — never in artifacts or logs; journals show `•••`.
 

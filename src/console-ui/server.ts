@@ -1079,7 +1079,7 @@ const server = createServer(async (req, res) => {
           const baseUrl = process.env.CONSOLE_URL || process.env.MOCK_CONSOLE_URL || 'http://localhost:3000';
           const tenantRaw = s?.tenant || '';
           const tenantPrefix = tenantRaw ? `/t/${tenantRaw}` : '';
-          const basePolicy = loadPolicy(resolve('policy.json'));
+          const basePolicy = loadPolicy(resolve('config/policy.json'));
           const policy = { ...basePolicy, allowedOrigins: [...basePolicy.allowedOrigins, baseUrl] };
           const surface = new BrowserSurface({ baseUrl, tenantPrefix, policy, headed: false });
 

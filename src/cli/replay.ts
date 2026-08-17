@@ -65,7 +65,7 @@ export async function runReplay(args: string[]): Promise<void> {
   }
 
   // Load policy + create surface
-  const policyPath = resolve('policy.json');
+  const policyPath = resolve('config/policy.json');
   const policy = loadPolicy(policyPath);
   const baseUrl = process.env.CONSOLE_URL || 'http://localhost:3000';
 

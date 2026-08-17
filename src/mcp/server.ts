@@ -383,7 +383,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   // Run replay — CONSOLE_URL env overrides config baseUrl (for test isolation)
-  const policy = loadPolicy(resolve('policy.json'));
+  const policy = loadPolicy(resolve('config/policy.json'));
   const effectiveBaseUrl = process.env.CONSOLE_URL || surfaceConf.baseUrl;
   const surface = new BrowserSurface({
     baseUrl: effectiveBaseUrl,

@@ -6,7 +6,7 @@ import { ErrorLibrarySchema, type ErrorLibrary } from './schema.js';
 export type { ErrorLibrary } from './schema.js';
 
 export function loadErrorLibrary(appId: string): ErrorLibrary {
-  const path = resolve('errors', `${appId}.json`);
+  const path = resolve('config/errors', `${appId}.json`);
   if (!existsSync(path)) return {};
   const raw = JSON.parse(readFileSync(path, 'utf8'));
   return ErrorLibrarySchema.parse(raw);
