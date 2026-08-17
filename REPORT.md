@@ -2,77 +2,75 @@
 
 ## 1. Architecture
 
-**An LLM discovers how to use a UI once; a deterministic engine replays what it learned with no model in the path.** Discovery is a tool factory. The artifact is the tool. An AI agent calling the tool through MCP is a customer of the tool — it may commission the factory (discovery is an MCP tool), but it can never authorize what the factory produces.
+**The LLM figures out a task once. Running the task never involves the LLM.**
 
-Three surfaces share one replay engine: an operator console (ask, teach, approve, debug), an MCP server (agents call capabilities as typed tools), and the CLI. All three journal identically.
-
-The target is a deliberately hostile mock bank console — iframes, dense non-semantic tables, no test IDs, session expiry, two tenants with different vocabulary — quarantined from `src/` with zero shared imports.
-
-- **Accessibility tree over DOM.** Works where there is no clean DOM; extends to desktop via OS accessibility APIs.
-- **Single process, JSON files.** Reviewable with a text editor; no invented infrastructure.
-- **Self-replay gate.** After discovery compiles an artifact, the system replays it with the same inputs before writing it to disk. This exists because discovery once compiled an artifact that read a page blob into a string field — it looked correct and did nothing. The gate then immediately caught a real compiler bug: credential placeholders were recorded literally instead of lifted to `$input` references, so the self-replay typed the placeholder into the login form and failed.
+- **Discovery** (LLM, runs once): explores the live bank console, records what worked, saves it as a capability.
+- **Replay** (no LLM, runs every time): executes the saved capability — same steps, same checks, ~1 second, same result every time.
+- Two entry points, one engine: an operator console for humans (ask, teach, approve, debug) and an MCP server for AI agents (run a tool, propose a new one). Both produce identical logs.
+- The target is a mock bank console built to be hard: iframes, dense tables, no test IDs, session expiry, two banks with different vocabulary. It shares zero code with the system.
+- **Key decision — the self-replay gate.** A capability is only saved if the system can re-run its own recording and reproduce the outputs. Why: discovery once produced "look-up-checking-balance" that looked valid and actually just read text off the search page — it never found a member. Only executing it revealed that. The gate then immediately caught a second real bug: logins were typing the literal placeholder `<sensitive:username>` instead of the credential. Reading the file could not catch either; running it caught both.
 
 ## 2. Artifact schema
 
-**A capability artifact is a contract an agent can call, not a recording of what happened.** It carries semver version, typed inputs with patterns and a sensitive flag, typed outputs with parse rules, declared business outcomes with detection predicates, and ordered steps with human-readable intents.
+**A capability is a contract: typed inputs, typed outputs, ordered steps, each step with a check.**
 
-**(a) Targets are property sets, not selectors.** Role, name, attribute, neighbor text, column header, frame, position, size — scored as a weighted whole so no single property is load-bearing. The first system was a fallback ladder of strategies; a frozen benchmark of hostile pages showed it collapsing on dense tables — label proximity matched every cell in a row, frame-blind geometry summed across iframes. The rewrite to whole-set scoring came from that eval, measured against fixed ground truth.
-
-**(b) Every step asserts.** Business outcomes are checked first in compound expects. An early artifact matched "Member" inside "No member matches" — the success branch swallowed the business outcome. That is why outcome predicates precede success text and why generic checkpoints are avoided.
-
-**(c) The contract is agent-facing.** MCP tool schemas generate from inputs and outputs. `humanAssisted` records whether a human contributed to the recording.
-
-An early replay returned navigation chrome as a transfer confirmation. That false success is why string outputs require a validation pattern and why parse failure is a hard failure, not a returned string.
+- Example contract: input `memberId` (5 digits) → output `savingsBalance` (money). Input "ABC" is rejected before a browser opens. Page text "No member matches" returns as the answer `MEMBER_NOT_FOUND`, not a crash.
+- **Elements are identified by all their recorded properties scored together, not by one selector.** One property changing doesn't break the match. This was forced by testing: the original one-strategy-at-a-time approach matched every cell in a table row, or picked the word "Savings" over the actual number. The rewrite was measured against a locked set of captured hard pages.
+- **Every step has a checkpoint, and failure checks run before success checks.** Why: an early capability confirmed success by finding the word "Member" — which also appears inside "No member matches," so failures read as successes.
+- **Every output must match its declared format.** Why: an early replay returned the text "Log Out" as a transfer confirmation. Now a value that doesn't parse is a failure, not an answer.
+- `humanAssisted: true` is stamped on any capability a human helped record, so the approver knows.
 
 ## 3. Determinism & error handling
 
-**Nothing in the replay path consults a model.** The artifact fixes steps. Weighted scoring fixes resolution. Predicates fix success. Arbitration polls the expect on a tick until it holds or the step times out.
+**Nothing in replay consults a model. Same capability + same inputs = same behavior.**
 
-**The margin gate** refuses to guess. The winner must beat the runner-up by a margin; a tie fails with both candidates and their per-property breakdowns. A wrong click in a bank back-office is worse than a stop.
-
-- `SUCCESS` — outputs extracted and validated; may include `recovered: true`.
-- `BUSINESS_OUTCOME` — a real answer ("member not found"), returned as data.
-- `HARD_FAILURE` — stopped at a named step with expected vs. observed and candidate scores.
-- `INVALID_INPUT` — rejected before the browser launches.
-- `ESCALATED` — a human's authority was required and used.
-
-**Error recovery** is app-scoped and bounded: detect via predicate, run a fixed recovery route (re-login after session expiry), retry the step once. A second occurrence is a hard failure. Removing the error library turns the same fault into a hard failure — the counterfactual is part of the evidence. Error detection runs before element resolution each step, so a session-expiry redirect is recognized before the scorer tries to match controls on a page that no longer has them.
+- **Refuses ties.** If two elements score too close to tell apart, replay does not click either — it fails and reports both candidates. Clicking the wrong thing in a bank system is worse than stopping.
+- **Waits by checking, not sleeping.** Each step re-checks its expected condition until it holds or the step times out. Slow pages succeed late; dead pages fail at a named step.
+- **Five results, exactly one per run:** `SUCCESS` · `BUSINESS_OUTCOME` (a real answer like "member not found") · `INVALID_INPUT` (rejected pre-flight) · `HARD_FAILURE` (names the step, expected vs. observed) · `ESCALATED` (a human stepped in).
+- **Known errors get one bounded recovery.** Session expires mid-run → re-login → retry that step once. A second occurrence is a failure. Removing the error definitions turns the same fault into a plain failure — that comparison is in the evidence.
+- Error checks run before element matching on every step, so a session-expiry page is reported as "session expired," not "couldn't find the button."
 
 ## 4. Heterogeneity & multi-tenant
 
-**The Surface interface is the only seam between the system and the target application.** `observe()` returns elements with properties; `act()` takes a closed verb; `resolve()` scores a property set against the page. Everything above — replay, discovery, escalation — is surface-agnostic.
+**The system touches the browser through one narrow interface: read the page, act on an element. Everything above it is surface-independent.**
 
-One artifact serves both tenants via a **vocabulary overlay** applied before resolution, mapping anchor text (Member Number ↔ Customer ID) and expect predicates. The artifact stays canonical; the overlay is the specialization. Per-step margins are recorded in every run and surfaced as drift signals — the report flags the thin-margin step that will break first if the site changes.
+- Pages are read via the accessibility tree — the same representation desktop apps expose. Supporting a desktop app means reimplementing the bottom layer only; saved capabilities and the engine don't change.
+- **One capability, two banks, demonstrated.** Cascade CU says "Member Number"; Harborview says "Customer ID." A small per-bank word map is applied at run time. The capability itself never changes. Both runs are in the evidence.
+- **Drift is visible before it breaks.** Every run records how confidently each element matched. Shrinking confidence flags the step that will fail first. The response is a word-map entry or an explicit re-teach — never a silent per-bank rebuild.
 
 ## 5. Escalation & handoff
 
-**Escalate when the system is working and a human's authority is required; fail loudly when it is not working.** We initially conflated these — budget exhaustion triggered escalation, asking a human to push a stuck run through. That is wrong: being stuck is a diagnosis, not an authority question. Exhaustion now produces a dead-end with a diagnosis.
+**If the system works but a person must decide, it stops and asks. If the system is broken, it stops and explains. Never the reverse.**
 
-The risky-action gate fires before a click or select whose resolved target matches a configured verb list — deterministic, never the model's judgment. The intervention request carries the live page state: URL, text, numbered elements with risky ones flagged. The operator acts on the same live session through the same act primitives (`click <n>`, `type <n> "..."`), each journaled. The operator surface is text by design — the seam is control ownership, not pixel transport.
-
-**Verified handback:** on resume, the system re-observes, diffs against the pre-handoff snapshot, and checks the step's expect. If the page has not changed, the claim is rejected with the reason shown. Accepted claims resume with `humanAssisted: true`. Unattended callers get a typed `needs-human` status with the console URL — the agent relays and cannot resolve.
+- We got this wrong first: running out of steps used to page a human. A human staring at "ran out of steps" has nothing to decide — that's a debugging problem, and it now returns a failure with a diagnosis.
+- **Escalation fires before an irreversible action.** Teaching "transfer $500 between accounts," the system fills the form, then stops before clicking Transfer. The trigger is a fixed word list (transfer, delete, pay, ...) matched against the button — never the model's own judgment.
+- The pause shows: who is in control, the reason, and the live page as text with every element numbered.
+- **The human drives the same live session** from the console — `click 3`, `type 2 "60020"` — every action logged.
+- **Handback is verified.** Claim "done" without changing anything and the system re-reads the screen and rejects the claim, reason shown. Accepted handbacks resume the run; the capability is stamped `humanAssisted: true`.
+- Agents never block on this. An MCP caller gets "a human is needed" plus the console link. Resolving it from an agent is not possible — retry/skip/approve are not MCP tools.
 
 ## 6. Safety
 
-- **Policy fence.** Origin and action allowlist at the Surface, beneath even the human's relayed actions.
-- **Trust gate.** Nothing callable until a named human approves. Approve/revoke exist only in the console, never over MCP.
-- **Risk handling.** Risky steps escalate attended, are refused unattended — always.
-- **Data handling.** Credentials from env at act time, never in artifacts or journals. Sensitive values masked in every rendering.
+Four layers; each assumes the ones above it can fail.
 
-Limits:
+- **Allowlist.** Only listed origins and action types, enforced at the lowest layer — below the LLM, and below a human's relayed clicks.
+- **Approval.** No capability is callable by any agent until a named human approves it with a note. Agents cannot approve. Ever.
+- **Risky actions.** Irreversible steps pause for a human when one is present, and are refused outright when unattended. An unattended run never clicks Transfer.
+- **Data.** Credentials come from environment variables at the moment of typing — never in capabilities, logs, or the repo. Sensitive values render as `•••` everywhere. The mock bank's pages carry realistic fake SSNs and card numbers so the masking is exercised, not assumed.
 
-- Screenshots are not redacted. Designed fix: sensitivity-driven region masking.
-- The risky-verb list is lexical. An innocuously named irreversible control would pass it; the trust gate is the backstop.
-- The goal string reaches the model unmodified. Bounded by the policy fence and risky gate, not eliminated.
+Limits, stated plainly:
+
+- Screenshots are not masked. Documented cut; fix designed.
+- The risky-word list matches button names. An irreversible button with an innocent name would pass it — approval and the unattended refusal are the backstop.
+- The goal text a user types reaches the LLM as-is. That is a prompt-injection surface — contained by the allowlist and the risky-action pause, not eliminated.
 
 ## 7. Cuts
 
-- **Screenshot redaction.** Text operator surface works without them; region masking designed but not built.
-- **Third-party sites.** Configured, deliberately removed — a public demo that resets is a flaky proof; the mock is harder.
-- **Desktop surface.** Designed to the Surface seam; accessibility APIs map directly.
-- **Remote operator transport.** Control-transfer model is real; pixel streaming is infrastructure on top.
-- **Attended replay.** Nursing a broken replay rescues one run and leaves the tool broken; we chose re-discovery.
-- **Margin trends.** Margins recorded per step per run; the trend alert is the next build.
-- **Artifact canonicalization.** Routes relative, vocabulary overlaid; parameterized patterns next.
+- **Screenshot masking** — designed, not built. Text logs are fully masked.
+- **Public bank-demo sites** — wired, then deliberately dropped: a public demo that resets under you proves nothing reliably, and the mock is harder than either candidate.
+- **Desktop apps** — the bottom layer is designed for it; not implemented.
+- **Remote takeover** — local takeover works today; streaming the session to a remote operator is described, not built.
+- **Human-rescued replays** — rejected on purpose: pushing a broken run through fixes one run and leaves the capability broken. Broken capabilities get re-taught.
+- **Drift alerts** — match-confidence is already recorded on every run; the alert on the trend is the next build.
 
-Next: screenshot redaction, margin trends, a second Surface implementation. The seam's real test is the second implementation.
+Next, in order: screenshot masking, drift alerts, a desktop implementation of the bottom layer — the real test of the design.
