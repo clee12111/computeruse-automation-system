@@ -40,5 +40,5 @@
 {"event":"observed","step":8,"elements":96,"iframeElements":14,"url":"http://localhost:3000/t/cascade-cu/member?q=12345","controller":"machine","timestamp":"2026-08-16T05:30:22.397Z"}
 {"event":"decision","step":8,"tool":"done","controller":"machine","timestamp":"2026-08-16T05:30:24.799Z"}
 {"event":"compiling","controller":"machine","timestamp":"2026-08-16T05:30:24.800Z"}
-{"event":"compiled","path":"C:\\Users\\ppeng\\Desktop\\Interface\\computeruse-automation-system\\capabilities\\evidence-discovery.v1.json","controller":"machine","timestamp":"2026-08-16T05:30:24.807Z"}
+{"event":"compiled","path":"capabilities/evidence-discovery.v1.json","controller":"machine","timestamp":"2026-08-16T05:30:24.807Z"}
 {"event":"token_summary","promptTokens":50064,"completionTokens":513,"reasoningTokens":106,"totalTokens":50577,"controller":"machine","timestamp":"2026-08-16T05:30:24.807Z"}

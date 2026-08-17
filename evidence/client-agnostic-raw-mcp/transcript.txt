@@ -17,6 +17,6 @@
    Outputs: {"savingsBalance":10426.23}
    Summary: lookup-dense-savings completed successfully — savingsBalance: $10,426.23.
    Duration: 862ms
-   Report: C:\Users\ppeng\Desktop\Interface\computeruse-automation-system\evidence\runs\2026-08-17T02-22-40-597Z-lookup-dense-savings\report.md
+   Report: ./evidence\runs\2026-08-17T02-22-40-597Z-lookup-dense-savings\report.md
 
 === PASS: All steps completed ===

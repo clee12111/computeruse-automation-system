@@ -4,6 +4,6 @@
   "expected": "{\"elementValue\":{\"$self\":true}}",
   "observed": "Target not resolved | Rung reports: rung 0 (textbox): score=6.25 margin=0.000; rung 1 (textbox): score=6.25 margin=0.000; rung 2 (textbox): score=4.75 margin=0.000",
   "evidenceRefs": [
-    "C:\\Users\\ppeng\\Desktop\\Interface\\computeruse-automation-system\\evidence\\runs\\2026-08-16T05-34-16-704Z-weak-test\\obs-101.png"
+    "evidence/runs/2026-08-16T05-34-16-704Z-weak-test/obs-101.png"
   ]
 }
