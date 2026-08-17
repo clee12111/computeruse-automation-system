@@ -1002,7 +1002,8 @@ export function renderMarkdown(report: RunReport): string {
     L.push('');
 
     L.push('## Result');
-    L.push(`**Status:** ${report.result?.status}`);
+    const hasRecovery = report.steps.some(s => s.result === 'recovered');
+    L.push(`**Status:** ${report.result?.status}${hasRecovery ? ' (with recovery)' : ''}`);
     if (report.result?.outcome) L.push(`**Outcome:** ${report.result.outcome}`);
     L.push('');
 
@@ -1021,7 +1022,7 @@ export function renderMarkdown(report: RunReport): string {
     L.push('|---|------|--------|--------|--------|');
     for (const s of report.steps) {
       const m = s.margin != null ? s.margin.toFixed(3) : '—';
-      const icon = s.result === 'recovered' ? '~' : s.result === 'passed' ? 'pass' : 'FAIL';
+      const icon = s.result === 'recovered' ? 'recovered' : s.result === 'passed' ? 'pass' : 'FAIL';
       L.push(`| ${s.number} | ${s.id} | ${s.action} | ${m} | ${icon} |`);
     }
     L.push('');

@@ -132,21 +132,21 @@ R.push(seedReplay('Certificate rate lookup — page changed', 'lookup-certificat
 removeTempArtifact('lookup-certificate-rate');
 
 // ── SUCCESS with recovery (session expiry) ────────────────
-// Recovery: insert a navigate-with-fault step AFTER login, BEFORE the normal search flow.
-// Step flow: s1 navigate login → s2-s4 login → s5-NEW navigate /search?fault=session_expired
-//   → session killed, redirect to login with "Your session has expired"
-//   → error library detects SESSION_EXPIRED → r1-r4 recovery → retry s5 → clean /search
+// Replace s5 (Click Member Search) with a fault navigate. The redirect lands on
+// the login page showing "Your session has expired". The fault step's expect
+// passes (login page has "Sign In"). Then s6 (type memberId into search field)
+// fails to resolve on the login page — error library detects SESSION_EXPIRED,
+// fires r1-r4 (re-login + navigate /search), s6 retries and succeeds.
 const recovBase = JSON.parse(readFileSync(resolve(CAP, 'lookup-dense-savings.v1.json'), 'utf8'));
 recovBase.name = 'lookup-savings-with-recovery';
 recovBase.version = '1.0.0';
-// Insert a fault-injected navigate after s4 (login submit)
-const faultStep = {
-  id: 's4b', intent: 'Navigate to member search (session expiry may occur)',
+// Replace s5 with fault navigate (same approach as the passing test)
+recovBase.steps[4] = {
+  id: 's5', intent: 'Navigate to member search (session expiry will trigger here)',
   action: { verb: 'navigate', value: '/search?fault=session_expired' },
-  target: { properties: { role: 'navigation', frame: 'main' }, reasoning: 'URL navigate' },
-  risk: 'safe', expect: { textPresent: 'Member' },
+  target: recovBase.steps[4].target,
+  risk: 'safe', expect: { textPresent: 'Sign In' },
 };
-recovBase.steps.splice(4, 0, faultStep); // insert after s4
 const recovDst = join(CAP, 'lookup-savings-with-recovery.v1.json');
 writeFileSync(recovDst, JSON.stringify(recovBase, null, 2));
 R.push(seedReplay('Savings lookup — recovered from session expiry', 'lookup-savings-with-recovery', '--memberId 60020'));

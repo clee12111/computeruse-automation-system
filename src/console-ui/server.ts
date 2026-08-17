@@ -800,23 +800,36 @@ function renderRun(runDir: string) {
   let steps = '';
 
   if (isReplay) {
-    // Replay run — group by step_start
+    // Replay run — group by step_start, dedup, and surface recovery substeps
     const stepStarts = events.filter((e: any) => e.event === 'step_start');
     const passed = new Set(events.filter((e: any) => e.event === 'expect_passed').map((e: any) => e.stepId));
     const scoring = events.filter((e: any) => e.event === 'scoring_result');
     const recovered = new Set(events.filter((e: any) => e.event === 'recovery_complete').map((e: any) => e.stepId));
 
+    // Collect ALL events per step (append on restart after recovery)
     const stepEvents: Record<string, any[]> = {};
     let currentStepId = '';
     for (const ev of events) {
-      if (ev.event === 'step_start') { currentStepId = ev.stepId; stepEvents[currentStepId] = []; }
+      if (ev.event === 'step_start') {
+        currentStepId = ev.stepId;
+        if (!stepEvents[currentStepId]) stepEvents[currentStepId] = [];
+      }
       if (currentStepId && stepEvents[currentStepId]) stepEvents[currentStepId].push(ev);
     }
 
+    // Deduplicate step_starts (a step may restart after recovery)
+    const seenIds = new Set<string>();
+    const uniqueStarts = stepStarts.filter((ss: any) => {
+      if (seenIds.has(ss.stepId)) return false;
+      seenIds.add(ss.stepId);
+      return true;
+    });
+
     const artSteps = art?.steps || [];
 
-    steps = stepStarts.map((ss: any, i: number) => {
-      const cls = recovered.has(ss.stepId) ? 'recovered' : passed.has(ss.stepId) ? 'ok' : (result?.stepId === ss.stepId ? 'fail' : 'dim');
+    steps = uniqueStarts.map((ss: any, i: number) => {
+      const isRecovered = recovered.has(ss.stepId);
+      const cls = isRecovered ? 'recovered' : passed.has(ss.stepId) ? 'ok' : (result?.stepId === ss.stepId ? 'fail' : 'dim');
       const sc = scoring.find((s: any) => s.stepId === ss.stepId);
       let marginHtml = '';
       if (sc && typeof sc.margin === 'number') {
@@ -854,7 +867,34 @@ function renderRun(runDir: string) {
           <pre style="font-size:9px;margin-top:4px;color:#666">${transcriptLines}</pre></details>`;
       }
 
-      return `<div class="step ${cls}"><span class="num">${i + 1}</span>${marginHtml}<strong>${ss.stepId}</strong> — ${ss.intent || ''}${detailLine}${schemaDropdown}${transcriptDropdown}</div>`;
+      let stepHtml = `<div class="step ${cls}"><span class="num">${i + 1}</span>${marginHtml}<strong>${ss.stepId}</strong> — ${ss.intent || ''}${detailLine}${schemaDropdown}${transcriptDropdown}</div>`;
+
+      // ── Recovery substeps: render as indented rows after the triggering step ──
+      if (isRecovered) {
+        const errEv = evs.find((e: any) => e.event === 'error_detected');
+        const recSteps = evs.filter((e: any) => e.event === 'recovery_step');
+        const recComplete = evs.find((e: any) => e.event === 'recovery_complete');
+        const errName = errEv?.error || 'unknown';
+
+        stepHtml += `<div style="margin-left:32px;border-left:3px solid #ff9800;padding-left:12px;margin-top:2px;margin-bottom:2px">`;
+        stepHtml += `<div style="font-size:11px;font-weight:600;color:#e65100;margin-bottom:4px">⚡ Error detected: ${errName} — running recovery</div>`;
+        for (let ri = 0; ri < recSteps.length; ri++) {
+          const rs = recSteps[ri];
+          const verb = rs.verb || 'act';
+          const intent = rs.intent || rs.stepId;
+          stepHtml += `<div class="step ok" style="padding:4px 8px;margin:2px 0;font-size:11px;border-left-color:#ff9800">`;
+          stepHtml += `<span class="num" style="font-size:9px;min-width:16px">r${ri + 1}</span>`;
+          stepHtml += `<strong>${rs.stepId}</strong> — ${intent}`;
+          stepHtml += `<div class="detail">${verb}</div>`;
+          stepHtml += `</div>`;
+        }
+        if (recComplete) {
+          stepHtml += `<div style="font-size:11px;color:#2e7d32;font-weight:600;margin-top:4px">&#10003; Recovery succeeded — step retried and passed</div>`;
+        }
+        stepHtml += `</div>`;
+      }
+
+      return stepHtml;
     }).join('');
 
   } else if (isDiscovery) {

@@ -207,7 +207,7 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
               let recoveryFailed = false;
               let recTypedValue0: string | undefined;
               for (const recStep of errEntry.recovery) {
-                journal.event('recovery_step', { stepId: recStep.id, verb: recStep.action.verb });
+                journal.event('recovery_step', { stepId: recStep.id, verb: recStep.action.verb, intent: recStep.intent });
                 if (recStep.action.verb === 'navigate') {
                   const path = bindValue(recStep.action.value, inputs);
                   const navResult = await surface.navigate(path);
@@ -257,7 +257,7 @@ export async function replay(config: EngineConfig): Promise<ReplayResult> {
               let recoveryFailed = false;
               let recTypedValue: string | undefined;
               for (const recStep of errEntry.recovery) {
-                journal.event('recovery_step', { stepId: recStep.id, verb: recStep.action.verb });
+                journal.event('recovery_step', { stepId: recStep.id, verb: recStep.action.verb, intent: recStep.intent });
                 if (recStep.action.verb === 'navigate') {
                   const path = bindValue(recStep.action.value, inputs);
                   const navResult = await surface.navigate(path);
