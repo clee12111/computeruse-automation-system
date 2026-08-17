@@ -1,1 +1,20 @@
-{}
+{
+  "lookup-dense-savings@1.1.0": {
+    "status": "approved",
+    "approvedBy": "seed (demo data)",
+    "approvedAt": "2026-08-17T00:00:00.000Z",
+    "note": "Primary savings lookup. Verified across both tenants."
+  },
+  "v2-loan-balance-simple@1.0.0": {
+    "status": "approved",
+    "approvedBy": "seed (demo data)",
+    "approvedAt": "2026-08-17T00:01:00.000Z",
+    "note": "Loan balance on sparse member page. Different page shape from savings."
+  },
+  "v2-harborview-savings@1.0.0": {
+    "status": "approved",
+    "approvedBy": "seed (demo data)",
+    "approvedAt": "2026-08-17T00:02:00.000Z",
+    "note": "Harborview-native vocabulary. Demonstrates tenant-specific artifact."
+  }
+}

@@ -1,0 +1,191 @@
+{
+  "name": "parabank-bill-pay",
+  "version": "1.0.0",
+  "app": {
+    "id": "parabank",
+    "startPath": "/parabank/index.htm"
+  },
+  "inputs": {
+    "username": {
+      "type": "string",
+      "sensitive": true
+    },
+    "password": {
+      "type": "string",
+      "sensitive": true
+    }
+  },
+  "outputs": {
+    "pageTitle": {
+      "type": "string",
+      "sensitive": false
+    }
+  },
+  "businessOutcomes": {},
+  "steps": [
+    {
+      "id": "s1",
+      "intent": "Navigate to /parabank/index.htm",
+      "action": {
+        "verb": "navigate",
+        "value": "/parabank/index.htm"
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "structural",
+            "note": "navigation target"
+          }
+        ],
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "textPresent": "About Us"
+      }
+    },
+    {
+      "id": "s2",
+      "intent": "Enter the provided username in the login form.",
+      "action": {
+        "verb": "type",
+        "value": {
+          "$input": "username"
+        }
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "structural",
+            "note": "textbox #1 of 2 in main"
+          },
+          {
+            "by": "geometric",
+            "lastResort": true,
+            "x": 366,
+            "y": 314
+          }
+        ],
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "elementValue": {
+          "$self": true
+        }
+      }
+    },
+    {
+      "id": "s3",
+      "intent": "Enter the provided password",
+      "action": {
+        "verb": "type",
+        "value": {
+          "$input": "password"
+        }
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "structural",
+            "note": "textbox #2 of 2 in main"
+          },
+          {
+            "by": "geometric",
+            "lastResort": true,
+            "x": 366,
+            "y": 362
+          }
+        ],
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "elementValue": {
+          "$self": true
+        }
+      }
+    },
+    {
+      "id": "s4",
+      "intent": "Submit the login form using the provided credentials",
+      "action": {
+        "verb": "click"
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "structural",
+            "note": "only button in main"
+          },
+          {
+            "by": "geometric",
+            "lastResort": true,
+            "x": 326,
+            "y": 392
+          }
+        ],
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "textPresent": "Accounts Overview"
+      }
+    },
+    {
+      "id": "s5",
+      "intent": "Navigate to Bill Pay from the Account Services menu.",
+      "action": {
+        "verb": "click"
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "roleName",
+            "role": "link",
+            "name": "Bill Pay"
+          },
+          {
+            "by": "geometric",
+            "lastResort": true,
+            "x": 375,
+            "y": 388
+          }
+        ],
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "textPresent": "Bill Pay"
+      }
+    },
+    {
+      "id": "s6",
+      "intent": "Read the payee name field label on the Bill Pay page.",
+      "action": {
+        "verb": "read",
+        "parseAs": "string",
+        "saveTo": "pageTitle"
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "structural",
+            "note": "cell #1 of 34 in main"
+          },
+          {
+            "by": "geometric",
+            "lastResort": true,
+            "x": 554,
+            "y": 361
+          }
+        ],
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "outputPopulated": "pageTitle"
+      }
+    }
+  ]
+}

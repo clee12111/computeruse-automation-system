@@ -5,15 +5,25 @@
   "type": "module",
   "scripts": {
     "cli": "tsx src/cli/index.ts",
+    "mcp": "tsx src/mcp/server.ts",
+    "console": "tsx src/console-ui/server.ts",
     "mock": "node mock-console/server.js",
+    "doctor": "tsx src/cli/doctor.ts",
+    "mcp:config": "tsx src/cli/mcp-config.ts",
     "schema:export": "tsx src/schema/export-json-schema.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed": "node scripts/seed-runs.mjs",
+    "verify:coldstart": "bash scripts/verify-coldstart.sh"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "openai": "^7.4.0",
     "playwright": "^1.62.1",
     "zod": "^3.23.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

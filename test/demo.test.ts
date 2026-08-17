@@ -30,18 +30,18 @@ afterAll(() => { server?.kill(); });
 describe('Demo Launcher', () => {
 
   it('demo.html exists', () => {
-    expect(existsSync(resolve('demo.html'))).toBe(true);
+    expect(existsSync(resolve('docs/demo.html'))).toBe(true);
   });
 
   it('demo.html contains tenant links', () => {
-    const html = readFileSync(resolve('demo.html'), 'utf8');
+    const html = readFileSync(resolve('docs/demo.html'), 'utf8');
     expect(html).toContain('/t/cascade-cu/login');
     expect(html).toContain('/t/harborview/login');
     expect(html).toContain('ParaBank');
   });
 
   it('all live tenant hrefs return 200', async () => {
-    const html = readFileSync(resolve('demo.html'), 'utf8');
+    const html = readFileSync(resolve('docs/demo.html'), 'utf8');
     const hrefs = [...html.matchAll(/href="(http:\/\/localhost:3000\/t\/[^"]+)"/g)].map(m => m[1]);
     expect(hrefs.length).toBeGreaterThanOrEqual(2);
 

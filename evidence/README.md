@@ -1,42 +1,41 @@
-# Evidence Directory
+# Evidence Index
 
-Each subdirectory under `runs/` is a single execution (discovery or replay).
+Each folder contains a journal, generated report, and README stating what it proves.
 
-## Directory naming
+## Replay
 
-`<ISO-timestamp>-<capability-name>/`
+| Claim | Folder | Result |
+|-------|--------|--------|
+| Successful replay with output | [replay-success](replay-success/) | SUCCESS, savingsBalance returned |
+| Recovery from mid-flow error | [replay-success-with-recovery](replay-success-with-recovery/) | SESSION_EXPIRED detected, recovered, completed |
+| Business outcome as data | [replay-business-outcome](replay-business-outcome/) | MEMBER_NOT_FOUND relayed as answer, not error |
+| Pre-flight input rejection | [replay-invalid-input](replay-invalid-input/) | INVALID_INPUT, no browser launched |
+| Ambiguous target refused | [replay-hard-failure-ambiguous](replay-hard-failure-ambiguous/) | Two candidates scored 6.25; margin gate refused |
+| Broken target / site drift | [replay-hard-failure-broken](replay-hard-failure-broken/) | HARD_FAILURE, target not resolved |
+| Risky step, unapproved | [replay-escalated-authority](replay-escalated-authority/) | ESCALATED, human required for authority |
 
-## Contents per run
+## Discovery
 
-| File | Purpose |
-|---|---|
-| `journal.jsonl` | One event per line: step starts, rung matches, conditions handled, expect results, outcomes detected. Sensitive values masked as `•••`. |
-| `result.json` | Final result (SUCCESS/BUSINESS_OUTCOME/HARD_FAILURE/ESCALATED). Sensitive values masked. |
-| `obs-*.png` | Screenshots captured during the run (on failure, or every observation during discovery). |
-| `compiled-artifact.json` | (Discovery only) The artifact produced by the recorder/compiler. |
+| Claim | Folder | Result |
+|-------|--------|--------|
+| Compiled with self-replay gate | [discovery-compiled](discovery-compiled/) | Artifact compiled, self-replay passed |
+| Rejected by self-replay gate | MISSING | _To capture: run discovery that compiles but fails self-replay_ |
+| Dead-end with diagnosis | MISSING | _To capture: run discovery with underspecified contract_ |
+| Human-assisted (escalated) | MISSING | _To capture: run with --attended_ |
+| Pre-flight refused | MISSING | _To capture: run discovery with outputs but no inputs_ |
 
-## Redaction rules
+## System
 
-- Input values declared `sensitive: true` (e.g. username, password) are replaced with `•••` in ALL files.
-- Output values declared `sensitive: true` (e.g. savingsBalance) are masked in journal and result.json; clear values appear ONLY in the programmatic return to the caller.
-- The `controller` field on every journal line is `machine` (Phase 8 adds `human` for escalated sessions).
+| Claim | Folder | Result |
+|-------|--------|--------|
+| Multi-tenant overlay | [multi-tenant-overlay](multi-tenant-overlay/) | One artifact, two tenants, both SUCCESS |
+| Trust gate | [trust-gate](trust-gate/) | Unapproved capability blocked |
+| Trust blocked (MCP) | [trust-blocked-mcp](trust-blocked-mcp/) | MCP returns trust_blocked error |
+| Schema validation | [schema-validation](schema-validation/) | Invalid schema rejected at load time |
+| Raw MCP client (no SDK) | [client-agnostic-raw-mcp](client-agnostic-raw-mcp/) | Full protocol handshake + tool call, zero dependencies |
+| Third-party surface | [third-party-parabank](third-party-parabank/) | ParaBank artifact (configured, unverified) |
+| Clean-room portability | MISSING | _To capture: docker build + run with --network none_ |
 
-## Subdirectories
+## Curated artifact
 
-- `discovery-*` — Discovery runs (LLM-driven exploration)
-- `replay-*` — Replay runs (deterministic artifact execution)
-
-## Shipped artifact model
-
-The artifact at `capabilities/lookup-savings-balance-live.v1.json` was produced by
-**gpt-5.6-luna** via the Responses API (Phase 6.5). Zero manual edits.
-
-### Attempt history
-
-| # | Model | API | Turns | Tokens | Cost est. | Result |
-|---|---|---|---|---|---|---|
-| 1-3 | gpt-5.6-luna | Chat Completions | — | 0 | $0 | Error: function tools need Responses API |
-| 4-5 | gpt-4o | Chat Completions | 10 | ~20K | ~$0.06 | Dead end: wrong cell targeted |
-| 6 | gpt-4.1 | Chat Completions | 9 | 18K | ~$0.05 | Compiled but missing search-click step |
-| 7 | gpt-4.1 | Chat Completions | 8 | 15K | ~$0.04 | Compiled, replay 5/5 (manual tableCell fix needed) |
-| 8 | gpt-5.6-luna | Responses API | 8 | 24K (224 reasoning) | ~$0.10 | **Compiled, replay 5/5, zero edits** |
+- [artifact-example.json](artifact-example.json) — the canonical schema example

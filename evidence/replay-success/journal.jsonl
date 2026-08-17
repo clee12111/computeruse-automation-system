@@ -1,0 +1,40 @@
+{"event":"step_start","stepId":"s1","intent":"Navigate to /t/cascade-cu/search","controller":"machine","timestamp":"2026-08-16T05:30:54.411Z"}
+{"event":"navigate","stepId":"s1","path":"/t/cascade-cu/search","controller":"machine","timestamp":"2026-08-16T05:30:54.411Z"}
+{"event":"expect_passed","stepId":"s1","controller":"machine","timestamp":"2026-08-16T05:30:54.456Z"}
+{"event":"step_start","stepId":"s2","intent":"Enter the provided <username> username","controller":"machine","timestamp":"2026-08-16T05:30:54.456Z"}
+{"event":"rung_matched","stepId":"s2","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:30:54.531Z"}
+{"event":"scoring_result","stepId":"s2","topScore":8.5,"margin":0.31152204836415365,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:30:54.531Z"}
+{"event":"acted","stepId":"s2","verb":"type","controller":"machine","timestamp":"2026-08-16T05:30:54.540Z"}
+{"event":"expect_passed","stepId":"s2","controller":"machine","timestamp":"2026-08-16T05:30:54.540Z"}
+{"event":"step_start","stepId":"s3","intent":"Enter the provided password for <username> login.","controller":"machine","timestamp":"2026-08-16T05:30:54.540Z"}
+{"event":"rung_matched","stepId":"s3","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:30:54.600Z"}
+{"event":"scoring_result","stepId":"s3","topScore":8.5,"margin":0.31152204836415365,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:30:54.601Z"}
+{"event":"acted","stepId":"s3","verb":"type","controller":"machine","timestamp":"2026-08-16T05:30:54.607Z"}
+{"event":"expect_passed","stepId":"s3","controller":"machine","timestamp":"2026-08-16T05:30:54.607Z"}
+{"event":"step_start","stepId":"s4","intent":"Submit the completed login form to enter the <username> console.","controller":"machine","timestamp":"2026-08-16T05:30:54.607Z"}
+{"event":"rung_matched","stepId":"s4","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:30:54.658Z"}
+{"event":"scoring_result","stepId":"s4","topScore":7.742720436939566,"margin":0.26935984969909316,"matchedRole":"button","controller":"machine","timestamp":"2026-08-16T05:30:54.658Z"}
+{"event":"acted","stepId":"s4","verb":"click","controller":"machine","timestamp":"2026-08-16T05:30:54.723Z"}
+{"event":"expect_passed","stepId":"s4","controller":"machine","timestamp":"2026-08-16T05:30:54.754Z"}
+{"event":"step_start","stepId":"s5","intent":"Open member search to look up member <memberId>.","controller":"machine","timestamp":"2026-08-16T05:30:54.754Z"}
+{"event":"rung_matched","stepId":"s5","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:30:54.801Z"}
+{"event":"scoring_result","stepId":"s5","topScore":7.74222875747328,"margin":0.11862600400978192,"matchedRole":"link","controller":"machine","timestamp":"2026-08-16T05:30:54.801Z"}
+{"event":"low_margin_warning","stepId":"s5","margin":0.11862600400978192,"topScore":7.74222875747328,"controller":"machine","timestamp":"2026-08-16T05:30:54.801Z"}
+{"event":"acted","stepId":"s5","verb":"click","controller":"machine","timestamp":"2026-08-16T05:30:54.827Z"}
+{"event":"expect_passed","stepId":"s5","controller":"machine","timestamp":"2026-08-16T05:30:54.841Z"}
+{"event":"step_start","stepId":"s6","intent":"Enter the requested member number for the member search.","controller":"machine","timestamp":"2026-08-16T05:30:54.842Z"}
+{"event":"rung_matched","stepId":"s6","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:30:54.916Z"}
+{"event":"scoring_result","stepId":"s6","topScore":8.5,"margin":0.30895034195658644,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:30:54.917Z"}
+{"event":"acted","stepId":"s6","verb":"type","controller":"machine","timestamp":"2026-08-16T05:30:54.922Z"}
+{"event":"expect_passed","stepId":"s6","controller":"machine","timestamp":"2026-08-16T05:30:54.923Z"}
+{"event":"step_start","stepId":"s7","intent":"Submit the member search for member <memberId>.","controller":"machine","timestamp":"2026-08-16T05:30:54.923Z"}
+{"event":"rung_matched","stepId":"s7","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:30:54.961Z"}
+{"event":"scoring_result","stepId":"s7","topScore":7.738577663713623,"margin":0.2620065754580336,"matchedRole":"button","controller":"machine","timestamp":"2026-08-16T05:30:54.961Z"}
+{"event":"acted","stepId":"s7","verb":"click","controller":"machine","timestamp":"2026-08-16T05:30:55.008Z"}
+{"event":"expect_passed","stepId":"s7","controller":"machine","timestamp":"2026-08-16T05:30:55.030Z"}
+{"event":"step_start","stepId":"s8","intent":"Read the savings account balance from the accounts table for member <memberId>.","controller":"machine","timestamp":"2026-08-16T05:30:55.030Z"}
+{"event":"rung_matched","stepId":"s8","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:30:55.123Z"}
+{"event":"scoring_result","stepId":"s8","topScore":8.741944553400025,"margin":0.1863349825864299,"matchedRole":"cell","controller":"machine","timestamp":"2026-08-16T05:30:55.124Z"}
+{"event":"acted","stepId":"s8","verb":"read","controller":"machine","timestamp":"2026-08-16T05:30:55.127Z"}
+{"event":"output_parsed","stepId":"s8","key":"savingsBalance","parseAs":"money","controller":"machine","timestamp":"2026-08-16T05:30:55.127Z"}
+{"event":"expect_passed","stepId":"s8","controller":"machine","timestamp":"2026-08-16T05:30:55.128Z"}

@@ -1,0 +1,14 @@
+{
+  "anchors": {
+    "Member Search": "Customer Search",
+    "Member": "Customer",
+    "Number": "ID"
+  },
+  "expects": {
+    "Member Search": "Customer Search",
+    "Member Details": "Customer Details"
+  },
+  "detects": {
+    "No member matches": "No member matches"
+  }
+}

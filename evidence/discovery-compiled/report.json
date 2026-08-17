@@ -1,0 +1,153 @@
+{
+  "type": "discovery_success",
+  "header": {
+    "capability": "evidence-discovery",
+    "version": "1.0.0",
+    "app": "vendor-console",
+    "timestamp": "2026-08-16T05:29:58.911Z",
+    "durationMs": 25896
+  },
+  "contract": {
+    "goal": "Look up member 12345 and read their savings balance",
+    "inputs": {
+      "memberId": {
+        "type": "string",
+        "pattern": "^[0-9]{5}$",
+        "sensitive": false
+      },
+      "username": {
+        "type": "string",
+        "sensitive": true
+      },
+      "password": {
+        "type": "string",
+        "sensitive": true
+      }
+    },
+    "outputs": {
+      "savingsBalance": {
+        "type": "money",
+        "sensitive": true
+      }
+    },
+    "businessOutcomes": []
+  },
+  "result": {
+    "status": "COMPILED"
+  },
+  "steps": [
+    {
+      "number": 1,
+      "id": "s1",
+      "intent": "Navigate to /t/cascade-cu/search",
+      "action": "Navigate to `/t/cascade-cu/search`",
+      "target": "navigation in main frame",
+      "identification": "Identified by role \"navigation\" and position only. Fragile: no semantic identifier — fragile.",
+      "proof": "the page must show the text 'Sign In'",
+      "risk": "safe",
+      "result": "passed"
+    },
+    {
+      "number": 2,
+      "id": "s2",
+      "intent": "Enter the provided <username> username",
+      "action": "Type {username} into \"Username\"",
+      "target": "textbox (HTML name: f1) near text [Username] in main frame",
+      "identification": "Identified by HTML name \"f1\" + neighbor text [Username]. Robust: HTML name attr (stable across reflows); neighbor text context. Fragile: position (breaks on layout change).",
+      "proof": "the field must contain the typed value",
+      "risk": "safe",
+      "result": "passed",
+      "issues": [
+        "Repeated action: type:"
+      ]
+    },
+    {
+      "number": 3,
+      "id": "s3",
+      "intent": "Enter the provided <username> password",
+      "action": "Type {password} into \"Password\"",
+      "target": "textbox (HTML name: f2) near text [Password] in main frame",
+      "identification": "Identified by HTML name \"f2\" + neighbor text [Password]. Robust: HTML name attr (stable across reflows); neighbor text context. Fragile: position (breaks on layout change).",
+      "proof": "the field must contain the typed value",
+      "risk": "safe",
+      "result": "passed"
+    },
+    {
+      "number": 4,
+      "id": "s4",
+      "intent": "Submit the completed <username> sign-in form to access the console.",
+      "action": "Click \"Sign In\"",
+      "target": "button named \"Sign In\" in main frame",
+      "identification": "Identified by accessible name \"Sign In\". Robust: accessible name (survives layout changes). Fragile: position (breaks on layout change).",
+      "proof": "the page must show the text 'Dashboard'",
+      "risk": "safe",
+      "result": "passed"
+    },
+    {
+      "number": 5,
+      "id": "s5",
+      "intent": "Open member search to look up member <memberId>",
+      "action": "Click \"Member Search\"",
+      "target": "link named \"Member Search\" in main frame",
+      "identification": "Identified by accessible name \"Member Search\". Robust: accessible name (survives layout changes). Fragile: position (breaks on layout change).",
+      "proof": "the page must show the text 'Member Search'",
+      "risk": "safe",
+      "result": "passed"
+    },
+    {
+      "number": 6,
+      "id": "s6",
+      "intent": "Enter the exact member number to search for member <memberId>.",
+      "action": "Type {memberId} into \"Member\"",
+      "target": "textbox (HTML name: f1) near text [Member, Number] in main frame",
+      "identification": "Identified by HTML name \"f1\" + neighbor text [Member, Number]. Robust: HTML name attr (stable across reflows); neighbor text context. Fragile: position (breaks on layout change).",
+      "proof": "the field must contain the typed value",
+      "risk": "safe",
+      "result": "passed"
+    },
+    {
+      "number": 7,
+      "id": "s7",
+      "intent": "Submit the member search for member <memberId>.",
+      "action": "Click \"Member Search\"",
+      "target": "button named \"Member Search\" in main frame",
+      "identification": "Identified by accessible name \"Member Search\". Robust: accessible name (survives layout changes). Fragile: position (breaks on layout change).",
+      "proof": "the page must show the text 'Member Search'",
+      "risk": "safe",
+      "result": "passed"
+    },
+    {
+      "number": 8,
+      "id": "s8",
+      "intent": "Read the savings account balance for member <memberId>.",
+      "action": "Read the value in the \"Balance\" column and save as `savingsBalance`",
+      "target": "cell named \"$4,320.10\" in column \"Balance\" near text [00] in accounts frame",
+      "identification": "Identified by accessible name \"$4,320.10\" + column header \"Balance\" + neighbor text [00]. Robust: accessible name (survives layout changes); column header (structural); neighbor text context; scoped to frame \"accounts\". Fragile: position (breaks on layout change).",
+      "proof": "output `savingsBalance` must have a value",
+      "risk": "safe",
+      "result": "passed"
+    }
+  ],
+  "warnings": [],
+  "costSummary": {
+    "turns": 8,
+    "totalTokens": 50577,
+    "promptTokens": 50064,
+    "completionTokens": 513,
+    "wallClockMs": 25896
+  },
+  "provenance": {
+    "model": "OpenAI",
+    "humanAssisted": false,
+    "humanActions": []
+  },
+  "reviewChecklist": [
+    "Repeated action warning: type:. The model struggled here — check if the step is correct.",
+    "Step \"s1\" has no semantic identifier — relies on position only. Fragile."
+  ],
+  "nextActions": [
+    "Review the script walkthrough and checklist above.",
+    "Approve: `npm run cli -- approve evidence-discovery --version 1.0.0`",
+    "Until approved, this capability cannot be called by agents."
+  ]
+}

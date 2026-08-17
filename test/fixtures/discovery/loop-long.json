@@ -1,0 +1,8 @@
+[
+  { "tool": "act", "verb": "click", "targetMatch": { "role": "button", "name": "Sign In" }, "intent": "Click login", "expectProposal": { "textPresent": "Sign In" } },
+  { "tool": "act", "verb": "click", "targetMatch": { "role": "button", "name": "Sign In" }, "intent": "Click login again", "expectProposal": { "textPresent": "Sign In" } },
+  { "tool": "act", "verb": "click", "targetMatch": { "role": "button", "name": "Sign In" }, "intent": "Click login 3rd time", "expectProposal": { "textPresent": "Sign In" } },
+  { "tool": "act", "verb": "click", "targetMatch": { "role": "button", "name": "Sign In" }, "intent": "Click login 4th time", "expectProposal": { "textPresent": "Sign In" } },
+  { "tool": "act", "verb": "click", "targetMatch": { "role": "button", "name": "Sign In" }, "intent": "Click login 5th time", "expectProposal": { "textPresent": "Sign In" } },
+  { "tool": "act", "verb": "click", "targetMatch": { "role": "button", "name": "Sign In" }, "intent": "Click login 6th time", "expectProposal": { "textPresent": "Sign In" } }
+]

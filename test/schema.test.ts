@@ -57,7 +57,7 @@ describe('schema validation', () => {
   it('golden fixture (capability-draft.json) validates', () => {
     const artifact = loadArtifact(FIXTURE);
     expect(artifact.name).toBe('lookup-member-savings-balance');
-    expect(artifact.version).toBe('1.0.0');
+    expect(artifact.version).toBe('2.0.0');
     expect(artifact.steps).toHaveLength(3);
     expect(artifact.steps[0].action.verb).toBe('type');
     expect(artifact.steps[2].action.verb).toBe('read');
@@ -182,21 +182,21 @@ describe('schema validation', () => {
     expect(relevant).toBeDefined();
   });
 
-  it('rejects geometric rung not flagged lastResort', () => {
+  it('accepts PropertySet with only role + frame (minimum valid)', () => {
     const data = mutate(d => {
-      (d.steps as any[])[0].target.chain.push({ by: 'geometric', x: 100, y: 200 });
+      (d.steps as any[])[0].target.properties = { role: 'textbox', frame: 'main' };
     });
-    const errs = expectZodFail(data);
-    const relevant = errs.find(e => e.includes('lastResort') || e.includes('geometric'));
-    expect(relevant).toBeDefined();
+    // role + frame is the minimum valid PropertySet (navigate targets)
+    const result = CapabilityArtifactSchema.safeParse(data);
+    expect(result.success).toBe(true);
   });
 
-  it('rejects empty chain', () => {
+  it('rejects missing role in PropertySet', () => {
     const data = mutate(d => {
-      (d.steps as any[])[0].target.chain = [];
+      (d.steps as any[])[0].target.properties = { frame: 'main', name: 'Search' };
     });
     const errs = expectZodFail(data);
-    const relevant = errs.find(e => e.includes('chain') || e.includes('too_small'));
+    const relevant = errs.find(e => e.includes('role') || e.includes('Required'));
     expect(relevant).toBeDefined();
   });
 

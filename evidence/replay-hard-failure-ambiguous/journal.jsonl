@@ -1,0 +1,4 @@
+{"event":"step_start","stepId":"s1","intent":"Navigate to login","controller":"machine","timestamp":"2026-08-16T05:34:16.860Z"}
+{"event":"navigate","stepId":"s1","path":"/t/cascade-cu/search","controller":"machine","timestamp":"2026-08-16T05:34:16.860Z"}
+{"event":"expect_passed","stepId":"s1","controller":"machine","timestamp":"2026-08-16T05:34:16.921Z"}
+{"event":"step_start","stepId":"s2","intent":"Type username","controller":"machine","timestamp":"2026-08-16T05:34:16.921Z"}

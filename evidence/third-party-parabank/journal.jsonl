@@ -1,0 +1,30 @@
+{"event":"step_start","stepId":"s1","intent":"Navigate to /parabank/index.htm","controller":"machine","timestamp":"2026-08-16T05:39:43.037Z"}
+{"event":"navigate","stepId":"s1","path":"/parabank/index.htm","controller":"machine","timestamp":"2026-08-16T05:39:43.038Z"}
+{"event":"expect_passed","stepId":"s1","controller":"machine","timestamp":"2026-08-16T05:39:46.087Z"}
+{"event":"step_start","stepId":"s2","intent":"Enter the provided username into the login form.","controller":"machine","timestamp":"2026-08-16T05:39:46.087Z"}
+{"event":"rung_matched","stepId":"s2","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:39:46.181Z"}
+{"event":"scoring_result","stepId":"s2","topScore":8,"margin":0.19203413940256048,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:39:46.181Z"}
+{"event":"acted","stepId":"s2","verb":"type","controller":"machine","timestamp":"2026-08-16T05:39:46.189Z"}
+{"event":"expect_passed","stepId":"s2","controller":"machine","timestamp":"2026-08-16T05:39:46.190Z"}
+{"event":"step_start","stepId":"s3","intent":"Enter the provided password before logging in.","controller":"machine","timestamp":"2026-08-16T05:39:46.190Z"}
+{"event":"rung_matched","stepId":"s3","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:39:46.269Z"}
+{"event":"scoring_result","stepId":"s3","topScore":8,"margin":0.19203413940256048,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:39:46.270Z"}
+{"event":"acted","stepId":"s3","verb":"type","controller":"machine","timestamp":"2026-08-16T05:39:46.276Z"}
+{"event":"expect_passed","stepId":"s3","controller":"machine","timestamp":"2026-08-16T05:39:46.277Z"}
+{"event":"step_start","stepId":"s4","intent":"Submit the login form with the provided credentials.","controller":"machine","timestamp":"2026-08-16T05:39:46.277Z"}
+{"event":"rung_matched","stepId":"s4","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:39:46.341Z"}
+{"event":"scoring_result","stepId":"s4","topScore":7.736656729716134,"margin":0.3078349514873458,"matchedRole":"button","controller":"machine","timestamp":"2026-08-16T05:39:46.342Z"}
+{"event":"acted","stepId":"s4","verb":"click","controller":"machine","timestamp":"2026-08-16T05:39:46.707Z"}
+{"event":"expect_passed","stepId":"s4","controller":"machine","timestamp":"2026-08-16T05:39:46.722Z"}
+{"event":"step_start","stepId":"s5","intent":"Navigate to Bill Pay to access the payee name field label.","controller":"machine","timestamp":"2026-08-16T05:39:46.722Z"}
+{"event":"rung_matched","stepId":"s5","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:39:46.776Z"}
+{"event":"scoring_result","stepId":"s5","topScore":7.75,"margin":0.10706082093278733,"matchedRole":"link","controller":"machine","timestamp":"2026-08-16T05:39:46.777Z"}
+{"event":"low_margin_warning","stepId":"s5","margin":0.10706082093278733,"topScore":7.75,"controller":"machine","timestamp":"2026-08-16T05:39:46.777Z"}
+{"event":"acted","stepId":"s5","verb":"click","controller":"machine","timestamp":"2026-08-16T05:39:46.929Z"}
+{"event":"expect_passed","stepId":"s5","controller":"machine","timestamp":"2026-08-16T05:39:46.945Z"}
+{"event":"step_start","stepId":"s6","intent":"Read the payee name field label on the Bill Pay page.","controller":"machine","timestamp":"2026-08-16T05:39:46.946Z"}
+{"event":"rung_matched","stepId":"s6","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:39:47.004Z"}
+{"event":"scoring_result","stepId":"s6","topScore":8.243449729091953,"margin":0.1687868656150481,"matchedRole":"cell","controller":"machine","timestamp":"2026-08-16T05:39:47.005Z"}
+{"event":"acted","stepId":"s6","verb":"read","controller":"machine","timestamp":"2026-08-16T05:39:47.008Z"}
+{"event":"output_parsed","stepId":"s6","key":"pageTitle","parseAs":"string","controller":"machine","timestamp":"2026-08-16T05:39:47.009Z"}
+{"event":"expect_passed","stepId":"s6","controller":"machine","timestamp":"2026-08-16T05:39:47.009Z"}

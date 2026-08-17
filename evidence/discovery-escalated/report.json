@@ -1,0 +1,208 @@
+{
+  "type": "discovery_failure",
+  "header": {
+    "capability": "transfer-500-from-member-60020-savings-t",
+    "version": "1.1.0",
+    "app": "vendor-console",
+    "timestamp": "2026-08-17T08:41:20.346Z",
+    "durationMs": 128498
+  },
+  "contract": {
+    "goal": "transfer 500 from member 60020 savings to checking",
+    "inputs": {
+      "memberId": {
+        "type": "string",
+        "pattern": "^[0-9]{5}$",
+        "sensitive": false
+      },
+      "username": {
+        "type": "string",
+        "sensitive": true
+      },
+      "password": {
+        "type": "string",
+        "sensitive": true
+      }
+    },
+    "outputs": {
+      "savingsBalance": {
+        "type": "money",
+        "sensitive": true
+      }
+    },
+    "businessOutcomes": [
+      "MEMBER_NOT_FOUND"
+    ]
+  },
+  "result": {
+    "status": "DEAD_END",
+    "reason": "Wall clock timeout"
+  },
+  "steps": [
+    {
+      "number": 1,
+      "id": "step-1",
+      "intent": "Enter the provided username into the login form.",
+      "action": "type on \"textbox\" value=\"<sensitive:username>\"",
+      "target": "textbox named \"textbox\" at http://localhost:3000/t/cascade-cu/login",
+      "identification": "Page had 23 elements. fields: f1, f2; buttons: Sign In.",
+      "proof": "(LLM-proposed)",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-17T08:41:21.287Z"
+    },
+    {
+      "number": 2,
+      "id": "step-2",
+      "intent": "Enter the provided password",
+      "action": "type on \"textbox\" value=\"<sensitive:password>\"",
+      "target": "textbox named \"textbox\" at http://localhost:3000/t/cascade-cu/login",
+      "identification": "Page had 23 elements. fields: f1, f2; buttons: Sign In.",
+      "proof": "(LLM-proposed)",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-17T08:41:26.634Z",
+      "issues": [
+        "Repeated action: type:"
+      ]
+    },
+    {
+      "number": 3,
+      "id": "step-3",
+      "intent": "Submit the login form with the provided credentials",
+      "action": "click on \"Sign In\"",
+      "target": "button named \"Sign In\" at http://localhost:3000/t/cascade-cu/login",
+      "identification": "Page had 23 elements. fields: f1, f2; buttons: Sign In.",
+      "proof": "(LLM-proposed)",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-17T08:41:30.813Z"
+    },
+    {
+      "number": 4,
+      "id": "step-4",
+      "intent": "Open member search to locate member 60020 for the transfer.",
+      "action": "click on \"Member Search\"",
+      "target": "link named \"Member Search\" at http://localhost:3000/t/cascade-cu/dashboard",
+      "identification": "Page had 64 elements. fields: Code; buttons: Go, Sign Off, Member Search, New Membership, Trackers.",
+      "proof": "(LLM-proposed)",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-17T08:41:35.101Z"
+    },
+    {
+      "number": 5,
+      "id": "step-5",
+      "intent": "Enter member number 60020 to search for the requested member",
+      "action": "type on \"textbox\" value=\"60020\"",
+      "target": "textbox named \"textbox\" at http://localhost:3000/t/cascade-cu/search",
+      "identification": "Page had 63 elements. fields: Code, f1, f2; buttons: Go, Sign Off, Member Search, New Membership, Trackers.",
+      "proof": "(LLM-proposed)",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-17T08:41:38.534Z"
+    },
+    {
+      "number": 6,
+      "id": "step-6",
+      "intent": "Submit the member search for member 60020.",
+      "action": "click on \"Member Search\"",
+      "target": "button named \"Member Search\" at http://localhost:3000/t/cascade-cu/search",
+      "identification": "Page had 63 elements. fields: Code, f1, f2; buttons: Go, Sign Off, Member Search, New Membership, Trackers.",
+      "proof": "(LLM-proposed)",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-17T08:41:41.418Z"
+    },
+    {
+      "number": 7,
+      "id": "step-7",
+      "intent": "Open the member transfer funds form for member 60020.",
+      "action": "click on \"Transfer Funds\"",
+      "target": "link named \"Transfer Funds\" at http://localhost:3000/t/cascade-cu/member?q=60020",
+      "identification": "Page had 120 elements. fields: Code; buttons: Go, Sign Off, Member Search, New Membership, Trackers.",
+      "proof": "(LLM-proposed)",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-17T08:41:43.972Z"
+    }
+  ],
+  "warnings": [],
+  "costSummary": {
+    "turns": 7,
+    "totalTokens": 41402,
+    "promptTokens": 40873,
+    "completionTokens": 529,
+    "wallClockMs": 128498
+  },
+  "provenance": {
+    "model": "OpenAI",
+    "humanAssisted": true,
+    "humanActions": [
+      "no observable change",
+      "no observable change"
+    ]
+  },
+  "nextActions": [
+    "1. Try with `--attended` for human-assisted discovery.",
+    "2. Review the collapsed trace below to see where the agent diverged."
+  ],
+  "diagnosis": "same_action_warning fired 1 time on type:; stop condition: Wall clock timeout",
+  "collapsedSteps": [
+    {
+      "startStep": 1,
+      "endStep": 1,
+      "count": 1,
+      "summary": "type on \"textbox\" value=\"<sensitive:username>\"",
+      "result": "passed"
+    },
+    {
+      "startStep": 2,
+      "endStep": 2,
+      "count": 1,
+      "summary": "type on \"textbox\" value=\"<sensitive:password>\"",
+      "result": "passed"
+    },
+    {
+      "startStep": 3,
+      "endStep": 3,
+      "count": 1,
+      "summary": "click on \"Sign In\"",
+      "result": "passed"
+    },
+    {
+      "startStep": 4,
+      "endStep": 4,
+      "count": 1,
+      "summary": "click on \"Member Search\"",
+      "result": "passed"
+    },
+    {
+      "startStep": 5,
+      "endStep": 5,
+      "count": 1,
+      "summary": "type on \"textbox\" value=\"60020\"",
+      "result": "passed"
+    },
+    {
+      "startStep": 6,
+      "endStep": 6,
+      "count": 1,
+      "summary": "click on \"Member Search\"",
+      "result": "passed"
+    },
+    {
+      "startStep": 7,
+      "endStep": 7,
+      "count": 1,
+      "summary": "click on \"Transfer Funds\"",
+      "result": "passed"
+    }
+  ],
+  "lastObservation": {
+    "stepNumber": 7,
+    "url": "http://localhost:3000/t/cascade-cu/member?q=60020",
+    "pageContext": "fields: Code; buttons: Go, Sign Off, Member Search, New Membership, Trackers",
+    "stillNeeded": "output \"savingsBalance\""
+  }
+}

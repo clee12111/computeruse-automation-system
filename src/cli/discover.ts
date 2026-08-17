@@ -17,11 +17,13 @@ export async function runDiscover(args: string[]): Promise<void> {
   const flags = new Map<string, string>();
   const inputs: Array<[string, string]> = [];
   const inputTypes: Array<{ name: string; type: string; pattern?: string; sensitive?: boolean }> = [];
-  const outputs: Array<[string, string]> = [];
+  const outputs: Array<[string, string, string?]> = [];
   let headed = false;
+  let attended = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--headed') { headed = true; continue; }
+    if (args[i] === '--attended') { attended = true; headed = true; continue; }
     if (args[i] === '--input' && args[i+1]) {
       const [k, ...rest] = args[++i].split('=');
       inputs.push([k, rest.join('=')]);
@@ -38,8 +40,8 @@ export async function runDiscover(args: string[]): Promise<void> {
       continue;
     }
     if (args[i] === '--output' && args[i+1]) {
-      const [k, v] = args[++i].split(':', 2);
-      outputs.push([k, v]);
+      const parts = args[++i].split(':');
+      outputs.push([parts[0], parts[1], parts[2]]);
       continue;
     }
     if (args[i].startsWith('--') && args[i+1]) {
@@ -60,8 +62,10 @@ export async function runDiscover(args: string[]): Promise<void> {
     process.exit(1);
   }
 
+  const appDesc = flags.get('app-description') || undefined;
+
   // Build contract
-  const contract: DiscoveryContract = { name, goal, app, startPath: start, inputs: {}, outputs: {} };
+  const contract: DiscoveryContract = { name, goal, app, appDescription: appDesc, startPath: start, inputs: {}, outputs: {} };
 
   for (const [k, v] of inputs) {
     const typeInfo = inputTypes.find(t => t.name === k);
@@ -73,16 +77,16 @@ export async function runDiscover(args: string[]): Promise<void> {
     };
   }
 
-  // Implicit username/password from env if not declared
-  if (!contract.inputs.username) {
-    contract.inputs.username = { type: 'string', sensitive: true, exampleValue: process.env.CONSOLE_USER || 'operator' };
+  // Implicit username/password from env if not declared (no defaults — env must be set)
+  if (!contract.inputs.username && process.env.CONSOLE_USER) {
+    contract.inputs.username = { type: 'string', sensitive: true, exampleValue: process.env.CONSOLE_USER };
   }
-  if (!contract.inputs.password) {
-    contract.inputs.password = { type: 'string', sensitive: true, exampleValue: process.env.CONSOLE_PASS || 'demo123' };
+  if (!contract.inputs.password && process.env.CONSOLE_PASS) {
+    contract.inputs.password = { type: 'string', sensitive: true, exampleValue: process.env.CONSOLE_PASS };
   }
 
-  for (const [k, v] of outputs) {
-    contract.outputs[k] = { type: v, sensitive: v === 'money' };
+  for (const [k, v, pattern] of outputs) {
+    contract.outputs[k] = { type: v, sensitive: v === 'money', pattern: pattern || undefined };
   }
 
   // LLM client
@@ -98,6 +102,7 @@ export async function runDiscover(args: string[]): Promise<void> {
       onUsage: (turn, usage) => {
         console.error(`  [turn ${turn}] tokens: ${usage.promptTokens}+${usage.completionTokens}=${usage.totalTokens}`);
       },
+      appDescription: contract.appDescription,
     });
   } else {
     console.error('No LLM configured. Set OPENAI_API_KEY or use --llm mock:<fixture.json>');
@@ -129,7 +134,13 @@ export async function runDiscover(args: string[]): Promise<void> {
 
   try {
     await surface.launch();
-    const result = await discover({ surface, llmClient, contract, journal, capabilitiesDir: resolve('capabilities') });
+    // Escalation channel for attended mode
+    let channel: import('../escalation/intervention.js').EscalationChannel | undefined;
+    if (attended) {
+      const { TerminalChannel } = await import('../escalation/intervention.js');
+      channel = new TerminalChannel();
+    }
+    const result = await discover({ surface, llmClient, contract, journal, capabilitiesDir: resolve('capabilities'), attended, channel });
 
     // Print total token usage if OpenAI
     if ('getTotalUsage' in llmClient) {
@@ -138,7 +149,20 @@ export async function runDiscover(args: string[]): Promise<void> {
       journal.event('token_summary', usage);
     }
 
-    console.log(JSON.stringify({ status: result.status, artifactPath: result.artifactPath, reason: result.reason }, null, 2));
+    // Generate report — stored in journal dir alongside journal.jsonl
+    const compiledArtifact = result.artifactPath
+      ? JSON.parse(readFileSync(resolve(result.artifactPath), 'utf8'))
+      : null;
+    journal.writeDiscoveryReport(compiledArtifact);
+
+    // Print report
+    const jsonMode = args.includes('--json');
+    if (jsonMode) {
+      console.log(readFileSync(resolve(journal.runDir, 'report.json'), 'utf8'));
+    } else {
+      console.log(readFileSync(resolve(journal.runDir, 'report.md'), 'utf8'));
+    }
+
     process.exit(result.status === 'compiled' ? 0 : 1);
   } finally {
     await surface.close();

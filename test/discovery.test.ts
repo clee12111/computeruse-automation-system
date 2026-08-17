@@ -59,7 +59,7 @@ async function runDiscovery(fixtureName: string, contract?: DiscoveryContract) {
   const tempArtifact = { name: c.name, version: '0.0.0', app: { id: c.app, startPath: c.startPath },
     inputs: Object.fromEntries(Object.entries(c.inputs).map(([k,v]) => [k, { type: v.type, pattern: v.pattern, sensitive: v.sensitive }])),
     outputs: Object.fromEntries(Object.entries(c.outputs).map(([k,v]) => [k, { type: v.type as any, sensitive: v.sensitive }])),
-    businessOutcomes: {}, steps: [{ id: 's0', intent: '', action: { verb: 'navigate' as const }, target: { chain: [{ by: 'structural' as const, note: 'x' }], reasoning: '' }, risk: 'safe' as const, expect: { textPresent: '' } }] };
+    businessOutcomes: {}, steps: [{ id: 's0', intent: '', action: { verb: 'navigate' as const }, target: { properties: { role: 'navigation', frame: 'main', name: 'start' }, reasoning: '' }, risk: 'safe' as const, expect: { textPresent: '' } }] };
   const journalInputs = Object.fromEntries(Object.entries(c.inputs).map(([k,v]) => [k, v.exampleValue]));
   const journal = new RunJournal(resolve('evidence/runs'), tempArtifact as any, journalInputs);
   (surface as any).config.screenshotDir = journal.runDir;
@@ -97,7 +97,15 @@ describe('DiscoveryAgent', { timeout: 60000 }, () => {
     const artifact = loadArtifact(result.artifactPath!);
     expect(artifact.name).toBe('test-lookup-balance');
 
-    // Replay the compiled artifact
+    // Validate compiled artifact has v2 structure
+    expect(artifact.steps.length).toBeGreaterThanOrEqual(4);
+    for (const step of artifact.steps) {
+      expect(step.target.properties).toBeDefined();
+      expect(step.target.properties.role).toBeDefined();
+      expect(step.target.properties.frame).toBeDefined();
+    }
+
+    // STRONG FORM: replay the compiled artifact and verify SUCCESS
     const surface = new BrowserSurface({ baseUrl: BASE, tenantPrefix: PREFIX, policy, headed: false });
     const replayJournal = new RunJournal(resolve('evidence/runs'), artifact, {
       memberId: '12345', username: 'operator', password: 'demo123',
@@ -133,12 +141,10 @@ describe('DiscoveryAgent', { timeout: 60000 }, () => {
     const { result } = await runDiscovery('happy');
     expect(result.status).toBe('compiled');
     const compiled = result.artifact!;
-    const handWritten = loadArtifact(resolve('capabilities/lookup-member-savings-balance.v1.json'));
 
-    // Same verb sequence (compiled may have slightly different structure due to initial navigate)
+    // Compiled artifact should have v2 structure (target.properties, not target.chain)
     const compiledVerbs = compiled.steps.map(s => s.action.verb);
-    const handWrittenVerbs = handWritten.steps.map(s => s.action.verb);
-    // Both should contain: navigate, type, type, click, navigate, type, click, read
+    // Should contain: navigate, type, type, click, navigate, type, click, read
     expect(compiledVerbs).toContain('navigate');
     expect(compiledVerbs).toContain('type');
     expect(compiledVerbs).toContain('click');
@@ -157,8 +163,9 @@ describe('DiscoveryAgent', { timeout: 60000 }, () => {
     expect(readStep).toBeDefined();
     expect(readStep!.action.saveTo).toBe('savingsBalance');
 
-    // read step's chain has ≥2 rungs (describe generates richer chains than hand-written)
-    expect(readStep!.target.chain.length).toBeGreaterThanOrEqual(1);
+    // read step's target has a PropertySet with role defined
+    expect(readStep!.target.properties).toBeDefined();
+    expect(readStep!.target.properties.role).toBeDefined();
 
     // Clean up
     if (existsSync(artPath)) unlinkSync(artPath);
@@ -218,5 +225,40 @@ describe('DiscoveryAgent', { timeout: 60000 }, () => {
     expect(journalContent.includes('expect_failed') || journalContent.includes('step_ok_fallback')).toBe(true);
 
     if (existsSync(artPath)) unlinkSync(artPath);
+  });
+
+  // ── Escalation in discovery ─────────────────────────────
+
+  it('ATTENDED: repeat threshold → dead_end (Phase 26: exhaustion never escalates)', async () => {
+    // Phase 26: exhaustion triggers are dead-ends, not escalations.
+    // The channel is never consulted for budget exhaustion.
+    const { ScriptedChannel } = await import('../src/escalation/intervention.js');
+    const channel = new ScriptedChannel([{ kind: 'abort', notes: 'test abort' }]);
+    const fixture = loadFixture('loop-long');
+    const llm = new MockLLMClient(fixture);
+    const surface = new BrowserSurface({ baseUrl: BASE, tenantPrefix: PREFIX, policy, headed: false });
+    const journal = new RunJournal(resolve('evidence/runs'), {
+      name: 'test-esc', version: '0.0.0', app: { id: 'console', startPath: '/login' },
+      inputs: { username: { type: 'string', sensitive: true }, password: { type: 'string', sensitive: true } },
+      outputs: {}, businessOutcomes: {},
+      steps: [{ id: 's0', intent: '', action: { verb: 'navigate' as const }, target: { properties: { role: 'navigation', frame: 'main', name: 'start' }, reasoning: '' }, risk: 'safe' as const, expect: { textPresent: '' } }],
+    } as any, { username: 'operator', password: 'demo123' });
+
+    await surface.launch();
+    try {
+      const result = await discover({ surface, llmClient: llm, contract: baseContract, journal, capabilitiesDir: resolve('capabilities'), attended: true, channel });
+      // Exhaustion → dead_end, channel never consulted
+      expect(result.status).toBe('dead_end');
+      expect(channel.requests.length).toBe(0);
+    } finally {
+      await surface.close();
+    }
+  });
+
+  it('UNATTENDED: repeat threshold → dead_end, no blocking (regression guard)', async () => {
+    const { result } = await runDiscovery('loop-long');
+    expect(result.status).toBe('dead_end');
+    expect(result.reason).toContain('Same action');
+    // Must return quickly — no human prompt
   });
 });

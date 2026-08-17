@@ -13,26 +13,73 @@ export interface LedgerEntry {
   intent: string;
   verb: string;
   value?: string;
-  chain: Descriptor[];
+  properties: Descriptor;
   expect: Predicate;
   outputName?: string;
   parseAs?: string;
   paramHint?: string;
   targetName?: string;     // accessible name of the target element (for risk check)
   targetIsPassword?: boolean;
+  forceRisky?: boolean;    // set when the risky-action gate approved the action
 }
 
 // ── Risk assignment (rule-based, LLM never sets risk) ───────
-const RISKY_BUTTON_PATTERN = /submit|open|confirm|execute|post|authorize/i;
+import { isRiskyTarget } from '../guardrails/risky.js';
 
 function assignRisk(entry: LedgerEntry): 'safe' | 'risky' {
-  // Risky = irreversible actions ONLY (not sensitive inputs like passwords)
-  // Click on button whose name matches irreversible-action pattern
-  if (entry.verb === 'click' && entry.targetName && RISKY_BUTTON_PATTERN.test(entry.targetName)) {
+  if (entry.forceRisky) return 'risky';
+  if ((entry.verb === 'click' || entry.verb === 'select') && entry.targetName && isRiskyTarget(entry.targetName)) {
     return 'risky';
   }
   // Password typing is SENSITIVE (handled by redaction), NOT risky
   return 'safe';
+}
+
+// ── Reasoning generator ────────────────────────────────
+// Explains WHY each target element is identified this way and what makes it robust.
+function buildReasoning(entry: LedgerEntry): string {
+  const p = entry.properties;
+  const parts: string[] = [];
+
+  // Primary identification strategy
+  if (entry.verb === 'navigate') {
+    return 'URL-based navigation — no element resolution needed.';
+  }
+
+  // What identifies this element
+  const identifiers: string[] = [];
+  if (p.name) identifiers.push(`accessible name "${p.name}"`);
+  if (p.attrName) identifiers.push(`HTML name attribute "${p.attrName}"`);
+  if (p.columnHeader) identifiers.push(`column header "${p.columnHeader}"`);
+  if (p.neighborText?.length) identifiers.push(`neighbor text [${p.neighborText.join(', ')}]`);
+
+  if (identifiers.length > 0) {
+    parts.push(`Identified by ${identifiers.join(' + ')}.`);
+  } else {
+    parts.push(`Identified by role "${p.role}" and position.`);
+  }
+
+  // Robustness factors
+  const robust: string[] = [];
+  const fragile: string[] = [];
+
+  if (p.name) robust.push('accessible name (survives layout changes)');
+  if (p.attrName) robust.push('HTML name attr (stable across reflows)');
+  if (p.columnHeader) robust.push('column header (structural, not positional)');
+  if (p.neighborText?.length) robust.push('neighbor text provides context if name changes');
+  if (p.frame && p.frame !== 'main') robust.push(`scoped to frame "${p.frame}" (reduces ambiguity)`);
+
+  if (p.position) fragile.push('position is a fallback — breaks on viewport/layout change');
+  if (p.size) fragile.push('size used as tiebreaker only');
+  if (!p.name && !p.attrName && !p.columnHeader) fragile.push('no semantic identifier — relies on role + position (fragile)');
+
+  if (robust.length) parts.push(`Robust: ${robust.join('; ')}.`);
+  if (fragile.length) parts.push(`Fragile: ${fragile.join('; ')}.`);
+
+  // Scoring context
+  parts.push(`Role: ${p.role}, frame: ${p.frame}.`);
+
+  return parts.join(' ');
 }
 
 // ── Recorder ────────────────────────────────────────────────
@@ -66,11 +113,14 @@ export class Recorder {
   }): CapabilityArtifact {
 
     const steps = this.ledger.map((entry, i) => {
-      // Param lifting: replace literal example values with $input bindings
+      // Param lifting: replace literal example values with $input bindings.
+      // For sensitive inputs, the discovery agent records <sensitive:NAME> as the value
+      // (real value is substituted only at act time). Match both forms.
       let value: unknown = entry.value;
       if (value != null) {
         for (const [inputName, inputDecl] of Object.entries(contract.inputs)) {
-          if (String(value) === inputDecl.exampleValue) {
+          const strVal = String(value);
+          if (strVal === inputDecl.exampleValue || strVal === `<sensitive:${inputName}>`) {
             value = { $input: inputName };
             break;
           }
@@ -96,8 +146,8 @@ export class Recorder {
         intent,
         action,
         target: {
-          chain: entry.chain,
-          reasoning: 'Recorded from discovery run.',
+          properties: entry.properties,
+          reasoning: buildReasoning(entry),
         },
         risk: assignRisk(entry),
         expect: entry.expect,
@@ -116,10 +166,17 @@ export class Recorder {
         }]),
       ),
       outputs: Object.fromEntries(
-        Object.entries(contract.outputs).map(([k, v]) => [k, {
-          type: v.type as 'money' | 'string' | 'date' | 'enum',
-          sensitive: v.sensitive,
-        }]),
+        Object.entries(contract.outputs).map(([k, v]) => {
+          const base = {
+            type: v.type as 'money' | 'string' | 'date' | 'enum',
+            sensitive: v.sensitive,
+          };
+          // String outputs must have a pattern (schema rule B).
+          if (v.type === 'string') {
+            return [k, { ...base, pattern: (v as any).pattern || '.{1,500}' }];
+          }
+          return [k, base];
+        }),
       ),
       businessOutcomes: {},
       steps: steps as CapabilityArtifact['steps'],

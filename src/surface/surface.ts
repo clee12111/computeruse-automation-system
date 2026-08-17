@@ -12,7 +12,10 @@ export interface ElementInfo {
   nearbyText?: string; // closest label-like text
   columnHeader?: string; // for table cells: the column header text
   frame: string;       // 'main' or iframe identifier
+  frameUrl?: string;   // URL of the frame this element lives in
+  attrName?: string;   // HTML name or id attribute (for form element identity)
   value?: string;      // current value (inputs, selects)
+  options?: string[];  // for combobox/select: available option values
   bounds?: { x: number; y: number; width: number; height: number };
 }
 
@@ -81,6 +84,9 @@ export interface Surface {
 
   /** Navigate to an app-relative path (Surface prefixes baseUrl + tenantPrefix). */
   navigate(path: string): Promise<ActResult>;
+
+  /** The base URL this surface is configured for. */
+  getBaseUrl(): string;
 
   /** Lifecycle. */
   launch(): Promise<void>;

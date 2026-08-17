@@ -1,0 +1,271 @@
+{
+  "name": "v2-loan-balance-simple",
+  "version": "1.0.0",
+  "app": {
+    "id": "vendor-console",
+    "startPath": "/t/cascade-cu/search"
+  },
+  "inputs": {
+    "memberId": {
+      "type": "string",
+      "pattern": "^[0-9]{5}$",
+      "sensitive": false
+    },
+    "username": {
+      "type": "string",
+      "sensitive": true
+    },
+    "password": {
+      "type": "string",
+      "sensitive": true
+    }
+  },
+  "outputs": {
+    "loanBalance": {
+      "type": "money",
+      "sensitive": true
+    }
+  },
+  "businessOutcomes": {},
+  "steps": [
+    {
+      "id": "s1",
+      "intent": "Navigate to /t/cascade-cu/search",
+      "action": {
+        "verb": "navigate",
+        "value": "/t/cascade-cu/search"
+      },
+      "target": {
+        "properties": {
+          "role": "navigation",
+          "frame": "main"
+        },
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "textPresent": "Sign In"
+      }
+    },
+    {
+      "id": "s2",
+      "intent": "Enter the provided <username> username",
+      "action": {
+        "verb": "type",
+        "value": {
+          "$input": "username"
+        }
+      },
+      "target": {
+        "properties": {
+          "role": "textbox",
+          "frame": "main",
+          "attrName": "f1",
+          "neighborText": [
+            "Username"
+          ],
+          "position": {
+            "x": 705,
+            "y": 245
+          },
+          "size": {
+            "w": 156,
+            "h": 18
+          }
+        },
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "elementValue": {
+          "$self": true
+        }
+      }
+    },
+    {
+      "id": "s3",
+      "intent": "Enter the provided password to authenticate",
+      "action": {
+        "verb": "type",
+        "value": {
+          "$input": "password"
+        }
+      },
+      "target": {
+        "properties": {
+          "role": "textbox",
+          "frame": "main",
+          "attrName": "f2",
+          "neighborText": [
+            "Password"
+          ],
+          "position": {
+            "x": 705,
+            "y": 330
+          },
+          "size": {
+            "w": 156,
+            "h": 18
+          }
+        },
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "elementValue": {
+          "$self": true
+        }
+      }
+    },
+    {
+      "id": "s4",
+      "intent": "Submit the completed login form.",
+      "action": {
+        "verb": "click"
+      },
+      "target": {
+        "properties": {
+          "role": "button",
+          "frame": "main",
+          "name": "Sign In",
+          "position": {
+            "x": 660,
+            "y": 417
+          },
+          "size": {
+            "w": 65,
+            "h": 23
+          }
+        },
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "textPresent": "Dashboard"
+      }
+    },
+    {
+      "id": "s5",
+      "intent": "Open member search to look up member <memberId>",
+      "action": {
+        "verb": "click"
+      },
+      "target": {
+        "properties": {
+          "role": "link",
+          "frame": "main",
+          "name": "Member Search",
+          "position": {
+            "x": 46,
+            "y": 138
+          },
+          "size": {
+            "w": 76,
+            "h": 14
+          }
+        },
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "textPresent": "Member Search"
+      }
+    },
+    {
+      "id": "s6",
+      "intent": "Enter the requested member number for the member search.",
+      "action": {
+        "verb": "type",
+        "value": {
+          "$input": "memberId"
+        }
+      },
+      "target": {
+        "properties": {
+          "role": "textbox",
+          "frame": "main",
+          "attrName": "f1",
+          "neighborText": [
+            "Member",
+            "Number"
+          ],
+          "position": {
+            "x": 417,
+            "y": 167
+          },
+          "size": {
+            "w": 146,
+            "h": 18
+          }
+        },
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "elementValue": {
+          "$self": true
+        }
+      }
+    },
+    {
+      "id": "s7",
+      "intent": "Submit the member search for member <memberId>.",
+      "action": {
+        "verb": "click"
+      },
+      "target": {
+        "properties": {
+          "role": "button",
+          "frame": "main",
+          "name": "Member Search",
+          "position": {
+            "x": 397,
+            "y": 323
+          },
+          "size": {
+            "w": 106,
+            "h": 23
+          }
+        },
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "textPresent": "Member"
+      }
+    },
+    {
+      "id": "s8",
+      "intent": "Read the auto loan balance for member <memberId> from the loans table.",
+      "action": {
+        "verb": "read",
+        "parseAs": "money",
+        "saveTo": "loanBalance"
+      },
+      "target": {
+        "properties": {
+          "role": "cell",
+          "frame": "main",
+          "name": "$12,500.00",
+          "columnHeader": "BALANCE",
+          "neighborText": [
+            "L-11111-01"
+          ],
+          "position": {
+            "x": 544,
+            "y": 850
+          },
+          "size": {
+            "w": 143,
+            "h": 21
+          }
+        },
+        "reasoning": "Recorded from discovery run."
+      },
+      "risk": "safe",
+      "expect": {
+        "outputPopulated": "loanBalance"
+      }
+    }
+  ]
+}

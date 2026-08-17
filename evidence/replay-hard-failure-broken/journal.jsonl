@@ -1,0 +1,31 @@
+{"event":"step_start","stepId":"s1","intent":"Navigate to /t/cascade-cu/search","controller":"machine","timestamp":"2026-08-16T05:33:11.059Z"}
+{"event":"navigate","stepId":"s1","path":"/t/cascade-cu/search","controller":"machine","timestamp":"2026-08-16T05:33:11.059Z"}
+{"event":"expect_passed","stepId":"s1","controller":"machine","timestamp":"2026-08-16T05:33:11.113Z"}
+{"event":"step_start","stepId":"s2","intent":"Enter the provided <username> username","controller":"machine","timestamp":"2026-08-16T05:33:11.113Z"}
+{"event":"rung_matched","stepId":"s2","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:33:11.180Z"}
+{"event":"scoring_result","stepId":"s2","topScore":8.5,"margin":0.31152204836415365,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:33:11.181Z"}
+{"event":"acted","stepId":"s2","verb":"type","controller":"machine","timestamp":"2026-08-16T05:33:11.192Z"}
+{"event":"expect_passed","stepId":"s2","controller":"machine","timestamp":"2026-08-16T05:33:11.192Z"}
+{"event":"step_start","stepId":"s3","intent":"Enter the provided password for <username> login.","controller":"machine","timestamp":"2026-08-16T05:33:11.192Z"}
+{"event":"rung_matched","stepId":"s3","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:33:11.253Z"}
+{"event":"scoring_result","stepId":"s3","topScore":8.5,"margin":0.31152204836415365,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:33:11.254Z"}
+{"event":"acted","stepId":"s3","verb":"type","controller":"machine","timestamp":"2026-08-16T05:33:11.260Z"}
+{"event":"expect_passed","stepId":"s3","controller":"machine","timestamp":"2026-08-16T05:33:11.260Z"}
+{"event":"step_start","stepId":"s4","intent":"Submit the completed login form to enter the <username> console.","controller":"machine","timestamp":"2026-08-16T05:33:11.261Z"}
+{"event":"rung_matched","stepId":"s4","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:33:11.305Z"}
+{"event":"scoring_result","stepId":"s4","topScore":7.742720436939566,"margin":0.26935984969909316,"matchedRole":"button","controller":"machine","timestamp":"2026-08-16T05:33:11.306Z"}
+{"event":"acted","stepId":"s4","verb":"click","controller":"machine","timestamp":"2026-08-16T05:33:11.373Z"}
+{"event":"expect_passed","stepId":"s4","controller":"machine","timestamp":"2026-08-16T05:33:11.400Z"}
+{"event":"step_start","stepId":"s5","intent":"Navigate (will trigger session expiry redirect)","controller":"machine","timestamp":"2026-08-16T05:33:11.401Z"}
+{"event":"navigate","stepId":"s5","path":"/search?fault=session_expired","controller":"machine","timestamp":"2026-08-16T05:33:11.401Z"}
+{"event":"expect_passed","stepId":"s5","controller":"machine","timestamp":"2026-08-16T05:33:11.424Z"}
+{"event":"step_start","stepId":"s6","intent":"Enter the requested member number for the member search.","controller":"machine","timestamp":"2026-08-16T05:33:11.424Z"}
+{"event":"rung_matched","stepId":"s6","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:33:11.487Z"}
+{"event":"scoring_result","stepId":"s6","topScore":6.578892133439797,"margin":0.1601484586279173,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:33:11.487Z"}
+{"event":"acted","stepId":"s6","verb":"type","controller":"machine","timestamp":"2026-08-16T05:33:11.493Z"}
+{"event":"expect_passed","stepId":"s6","controller":"machine","timestamp":"2026-08-16T05:33:11.494Z"}
+{"event":"step_start","stepId":"s7","intent":"Submit the member search for member <memberId>.","controller":"machine","timestamp":"2026-08-16T05:33:11.494Z"}
+{"event":"rung_matched","stepId":"s7","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:33:11.539Z"}
+{"event":"scoring_result","stepId":"s7","topScore":5.633086416034679,"margin":0.12851558228410273,"matchedRole":"button","controller":"machine","timestamp":"2026-08-16T05:33:11.539Z"}
+{"event":"low_margin_warning","stepId":"s7","margin":0.12851558228410273,"topScore":5.633086416034679,"controller":"machine","timestamp":"2026-08-16T05:33:11.539Z"}
+{"event":"acted","stepId":"s7","verb":"click","controller":"machine","timestamp":"2026-08-16T05:33:11.587Z"}

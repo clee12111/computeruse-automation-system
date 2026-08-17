@@ -58,6 +58,48 @@ export class TerminalChannel implements EscalationChannel {
   }
 }
 
+// ── ConsoleChannel (operator console: HTTP-based escalation) ──
+// Parks the intervention request and waits for an HTTP response.
+// The console UI polls /api/intervention and posts the claim.
+export class ConsoleChannel implements EscalationChannel {
+  private pendingResolve: ((claim: HandbackClaim) => void) | null = null;
+  private pendingRequest: InterventionRequest | null = null;
+  private timeoutMs: number;
+
+  constructor(timeoutMs = 10 * 60 * 1000) { // default: 10 minutes
+    this.timeoutMs = timeoutMs;
+  }
+
+  /** The current pending intervention, if any. */
+  getPending(): InterventionRequest | null {
+    return this.pendingRequest;
+  }
+
+  /** Resolve the pending intervention with a claim from the UI. */
+  respond(claim: HandbackClaim): boolean {
+    if (!this.pendingResolve) return false;
+    this.pendingResolve(claim);
+    this.pendingResolve = null;
+    this.pendingRequest = null;
+    return true;
+  }
+
+  async request(req: InterventionRequest): Promise<HandbackClaim> {
+    this.pendingRequest = req;
+    return new Promise<HandbackClaim>((resolve) => {
+      this.pendingResolve = resolve;
+      // Timeout: abort if no human responds
+      setTimeout(() => {
+        if (this.pendingResolve === resolve) {
+          this.pendingResolve = null;
+          this.pendingRequest = null;
+          resolve({ kind: 'abort', notes: 'Console escalation timed out (no human response)' });
+        }
+      }, this.timeoutMs);
+    });
+  }
+}
+
 // ── ScriptedChannel (tests: returns scripted claims) ────────
 export class ScriptedChannel implements EscalationChannel {
   private claims: HandbackClaim[];

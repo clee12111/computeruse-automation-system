@@ -1,0 +1,140 @@
+{
+  "type": "replay_failure",
+  "header": {
+    "capability": "lookup-dense-savings",
+    "version": "1.1.0",
+    "app": "vendor-console",
+    "timestamp": "2026-08-16T05:35:18.870Z",
+    "durationMs": 15821
+  },
+  "contract": {
+    "inputs": {
+      "memberId": {
+        "type": "string",
+        "pattern": "^[0-9]{5}$",
+        "sensitive": false
+      },
+      "username": {
+        "type": "string",
+        "sensitive": true
+      },
+      "password": {
+        "type": "string",
+        "sensitive": true
+      }
+    },
+    "outputs": {
+      "savingsBalance": {
+        "type": "money",
+        "sensitive": true
+      }
+    },
+    "businessOutcomes": [
+      "MEMBER_NOT_FOUND"
+    ]
+  },
+  "result": {
+    "status": "ESCALATED"
+  },
+  "steps": [
+    {
+      "number": 1,
+      "id": "s1",
+      "intent": "Navigate to the login page",
+      "action": "Navigate to `/search`",
+      "target": "navigation in main frame",
+      "identification": "Identified by role \"navigation\" and position only. Fragile: no semantic identifier — fragile.",
+      "proof": "the page must show the text 'Sign In'",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-16T05:35:18.870Z"
+    },
+    {
+      "number": 2,
+      "id": "s2",
+      "intent": "Enter the ••• username",
+      "action": "Type {username} into \"Username\"",
+      "target": "textbox (HTML name: f1) near text [Username] in main frame",
+      "identification": "Identified by HTML name \"f1\" + neighbor text [Username]. Robust: HTML name attr (stable across reflows); neighbor text context. Fragile: position (breaks on layout change).",
+      "proof": "the field must contain the typed value",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.31152204836415365,
+      "timing": "2026-08-16T05:35:18.929Z"
+    },
+    {
+      "number": 3,
+      "id": "s3",
+      "intent": "Enter the ••• password",
+      "action": "Type {password} into \"Password\"",
+      "target": "textbox (HTML name: f2) near text [Password] in main frame",
+      "identification": "Identified by HTML name \"f2\" + neighbor text [Password]. Robust: HTML name attr (stable across reflows); neighbor text context. Fragile: position (breaks on layout change).",
+      "proof": "the field must contain the typed value",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.31152204836415365,
+      "timing": "2026-08-16T05:35:19.021Z"
+    },
+    {
+      "number": 4,
+      "id": "s4",
+      "intent": "Click Sign In to authenticate",
+      "action": "Click \"Sign In\"",
+      "target": "button named \"Sign In\" in main frame",
+      "identification": "Identified by accessible name \"Sign In\". Robust: accessible name (survives layout changes). Fragile: position (breaks on layout change).",
+      "proof": "the page must show the text 'Dashboard'",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.26935984969909316,
+      "timing": "2026-08-16T05:35:19.084Z"
+    },
+    {
+      "number": 5,
+      "id": "s5",
+      "intent": "Navigate to member search",
+      "action": "Click \"Member Search\"",
+      "target": "link named \"Member Search\" in main frame",
+      "identification": "Identified by accessible name \"Member Search\". Robust: accessible name (survives layout changes). Fragile: position (breaks on layout change).",
+      "proof": "the page must show the text 'Member Search'",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-16T05:35:19.229Z"
+    },
+    {
+      "number": 6,
+      "id": "s6",
+      "intent": "Enter the member number into the search field",
+      "action": "Type {memberId} into \"Member\"",
+      "target": "textbox (HTML name: f1) near text [Member, Number] in main frame",
+      "identification": "Identified by HTML name \"f1\" + neighbor text [Member, Number]. Robust: HTML name attr (stable across reflows); neighbor text context. Fragile: position (breaks on layout change).",
+      "proof": "the field must contain the typed value",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.30895034195658644,
+      "timing": "2026-08-16T05:35:19.258Z"
+    },
+    {
+      "number": 7,
+      "id": "s7",
+      "intent": "Submit the search",
+      "action": "Click \"Member Search\"",
+      "target": "button named \"Member Search\" in main frame",
+      "identification": "Identified by accessible name \"Member Search\". Robust: accessible name (survives layout changes). Fragile: position (breaks on layout change).",
+      "proof": "business outcome: MEMBER_NOT_FOUND OR the page must show the text 'Member Details'",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.2620065754580336,
+      "timing": "2026-08-16T05:35:19.332Z"
+    }
+  ],
+  "warnings": [],
+  "provenance": {
+    "humanAssisted": true,
+    "humanActions": []
+  },
+  "nextActions": [
+    "Review the failure point and candidate table above.",
+    "Re-discover: `npm run cli -- discover --name lookup-dense-savings ...`",
+    "Check if the target site has changed layout since discovery."
+  ]
+}

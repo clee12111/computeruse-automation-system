@@ -17,6 +17,11 @@
 //   --attended      Enable attended mode (human escalation)
 //   --allow-risky   Permit execution of risky steps
 
+// Load .env so users don't need to export vars manually
+import { resolve } from 'node:path';
+import { loadEnvFile } from '../discovery/openai-client.js';
+loadEnvFile(resolve(process.cwd(), '.env'));
+
 const args = process.argv.slice(2);
 const command = args[0];
 
@@ -29,6 +34,9 @@ Usage:
 Commands:
   discover    Discover a capability via LLM-driven exploration
   replay      Replay a recorded capability artifact deterministically
+  approve     Approve a capability for production use
+  revoke      Revoke approval for a capability
+  trust       View trust status and promotion dossier
 
 discover options:
   --name <name>              Capability name
@@ -37,6 +45,7 @@ discover options:
   --input-type <key:type:re> Input type declaration (repeatable)
   --output <key:type>        Output declaration (repeatable)
   --app <app-id>             Target application identifier
+  --app-description <desc>   One-line description of the target application
   --start <path>             Start path / URL
 
 replay options:
@@ -46,13 +55,14 @@ replay options:
   --allow-risky              Allow execution of risky steps
 
 Examples:
-  npm run cli -- discover --name lookup-member-savings-balance \\
-    --goal "Look up the member and read their savings account balance" \\
-    --input memberId=12345 --input-type "memberId:string:^[0-9]{5}$" \\
-    --output "savingsBalance:money" --app vendor-console \\
-    --start /t/cascade-cu/search
+  npm run cli -- discover --name lookup-balance \\
+    --goal "Look up the account and read the balance" \\
+    --input accountId=12345 --input-type "accountId:string:^[0-9]{5}$" \\
+    --output "balance:money" --app vendor-console \\
+    --app-description "a legacy operator console" \\
+    --start /search
 
-  npm run cli -- replay lookup-member-savings-balance --memberId 12345`);
+  npm run cli -- replay lookup-balance --accountId 12345`);
 }
 
 if (!command || command === '--help' || command === '-h') {
@@ -67,9 +77,9 @@ if (command === 'discover') {
   const { runReplay } = await import('./replay.js');
   await runReplay(args.slice(1));
 } else if (command === 'approve') {
-  const { approveCapability, getTrustStatus, computeDossier } = await import('../guardrails/trust.js');
+  const { approveCapability } = await import('../guardrails/trust.js');
   const capName = args[1];
-  if (!capName) { console.error('Usage: approve <capability> --version x.y.z [--note "..."]'); process.exit(1); }
+  if (!capName) { console.error('Usage: approve <capability> [--version x.y.z] [--note "..."]'); process.exit(1); }
   const vFlag = args.indexOf('--version');
   const version = vFlag >= 0 ? args[vFlag + 1] : '1.0.0';
   const nFlag = args.indexOf('--note');
@@ -77,6 +87,19 @@ if (command === 'discover') {
   const entry = approveCapability(capName, version, note);
   console.log(`Approved: ${capName}@${version} by ${entry.approvedBy} at ${entry.approvedAt}`);
   if (note) console.log(`  Note: ${note}`);
+} else if (command === 'revoke') {
+  const { revokeCapability, getTrustStatus } = await import('../guardrails/trust.js');
+  const capName = args[1];
+  if (!capName) { console.error('Usage: revoke <capability> [--version x.y.z]'); process.exit(1); }
+  const vFlag = args.indexOf('--version');
+  const version = vFlag >= 0 ? args[vFlag + 1] : '1.0.0';
+  const before = getTrustStatus(capName, version);
+  if (before.status === 'manual') {
+    console.log(`${capName}@${version} is already unapproved (status: manual).`);
+  } else {
+    revokeCapability(capName, version);
+    console.log(`Revoked: ${capName}@${version} (was approved by ${before.approvedBy} at ${before.approvedAt})`);
+  }
 } else if (command === 'trust') {
   const { getTrustStatus, computeDossier } = await import('../guardrails/trust.js');
   const capName = args[1];

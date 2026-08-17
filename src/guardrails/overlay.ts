@@ -1,6 +1,6 @@
 // src/guardrails/overlay.ts — Per-tenant vocabulary overlay.
 // Artifacts are tenant-free. Overlays map vocabulary strings only.
-// Any structural key (steps, verbs, chains) in an overlay is REJECTED.
+// Any structural key (steps, verbs, properties) in an overlay is REJECTED.
 
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -46,17 +46,29 @@ export function applyOverlay(artifact: CapabilityArtifact, overlay: Overlay): { 
   const a = JSON.parse(JSON.stringify(artifact)) as CapabilityArtifact;
   const used: string[] = [];
 
-  // Apply anchor mappings to descriptor chains
+  // Apply anchor mappings to target property strings
   if (overlay.anchors) {
     for (const step of a.steps) {
-      for (const desc of step.target.chain) {
-        if ('anchor' in desc && typeof (desc as any).anchor === 'string') {
-          const orig = (desc as any).anchor as string;
-          if (overlay.anchors[orig]) {
-            (desc as any).anchor = overlay.anchors[orig];
-            used.push(`anchor: "${orig}" → "${overlay.anchors[orig]}"`);
+      const props = step.target.properties;
+      // Map name
+      if (props.name && overlay.anchors[props.name]) {
+        used.push(`anchor: "${props.name}" → "${overlay.anchors[props.name]}"`);
+        props.name = overlay.anchors[props.name];
+      }
+      // Map neighborText entries
+      if (props.neighborText) {
+        props.neighborText = props.neighborText.map(t => {
+          if (overlay.anchors![t]) {
+            used.push(`anchor: "${t}" → "${overlay.anchors![t]}"`);
+            return overlay.anchors![t];
           }
-        }
+          return t;
+        });
+      }
+      // Map columnHeader
+      if (props.columnHeader && overlay.anchors[props.columnHeader]) {
+        used.push(`anchor: "${props.columnHeader}" → "${overlay.anchors[props.columnHeader]}"`);
+        props.columnHeader = overlay.anchors[props.columnHeader];
       }
       // Apply to condition handler targets if present
       if (step.onCondition) {

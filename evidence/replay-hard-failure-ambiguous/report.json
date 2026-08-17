@@ -1,0 +1,109 @@
+{
+  "type": "replay_failure",
+  "header": {
+    "capability": "weak-test",
+    "version": "2.0.0",
+    "app": "vendor-console",
+    "timestamp": "2026-08-16T05:34:16.860Z",
+    "durationMs": 61
+  },
+  "contract": {
+    "inputs": {
+      "memberId": {
+        "type": "string",
+        "pattern": "^[0-9]{5}$",
+        "sensitive": false
+      },
+      "username": {
+        "type": "string",
+        "sensitive": true
+      },
+      "password": {
+        "type": "string",
+        "sensitive": true
+      }
+    },
+    "outputs": {
+      "balance": {
+        "type": "money",
+        "sensitive": true
+      }
+    },
+    "businessOutcomes": []
+  },
+  "result": {
+    "status": "HARD_FAILURE",
+    "reason": "Target not resolved | Rung reports: rung 0 (textbox): score=6.25 margin=0.000; rung 1 (textbox): score=6.25 margin=0.000; rung 2 (textbox): score=4.75 margin=0.000"
+  },
+  "steps": [
+    {
+      "number": 1,
+      "id": "s1",
+      "intent": "Navigate to login",
+      "action": "Navigate to `/t/cascade-cu/search`",
+      "target": "navigation in main frame",
+      "identification": "Identified by role \"navigation\" and position only. Fragile: no semantic identifier — fragile.",
+      "proof": "the page must show the text 'Sign In'",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-16T05:34:16.860Z"
+    },
+    {
+      "number": 2,
+      "id": "s2",
+      "intent": "Type username",
+      "action": "Type {username} into \"a field\"",
+      "target": "textbox in main frame",
+      "identification": "Identified by role \"textbox\" and position only. Fragile: no semantic identifier — fragile.",
+      "proof": "the field must contain the typed value",
+      "risk": "safe",
+      "result": "failed",
+      "timing": "2026-08-16T05:34:16.921Z"
+    }
+  ],
+  "warnings": [],
+  "provenance": {
+    "humanAssisted": false,
+    "humanActions": []
+  },
+  "nextActions": [
+    "Review the failure point and candidate table above.",
+    "Re-discover: `npm run cli -- discover --name weak-test ...`",
+    "Check if the target site has changed layout since discovery."
+  ],
+  "candidateTables": [
+    {
+      "stepId": "s2",
+      "stepIntent": "Type username",
+      "candidates": [
+        {
+          "rank": 1,
+          "score": 6.25,
+          "breakdown": {
+            "score": 6.25,
+            "margin": 0
+          },
+          "matchSummary": "textbox: score 6.25, margin 0.000"
+        },
+        {
+          "rank": 2,
+          "score": 6.25,
+          "breakdown": {
+            "score": 6.25,
+            "margin": 0
+          },
+          "matchSummary": "textbox: score 6.25, margin 0.000"
+        },
+        {
+          "rank": 3,
+          "score": 4.75,
+          "breakdown": {
+            "score": 4.75,
+            "margin": 0
+          },
+          "matchSummary": "textbox: score 4.75, margin 0.000"
+        }
+      ]
+    }
+  ]
+}

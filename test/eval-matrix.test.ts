@@ -58,7 +58,7 @@ beforeAll(async () => {
     stdio: 'pipe', cwd: process.cwd(),
   });
   await waitForServer();
-  artifact = loadArtifact(resolve('capabilities/lookup-savings-balance-live.v1.json'));
+  artifact = loadArtifact(resolve('capabilities/lookup-dense-savings.v1.json'));
 }, 30000);
 
 afterAll(() => { server?.kill(); });
@@ -85,7 +85,7 @@ describe('Eval Matrix', { timeout: 60000 }, () => {
     mod.steps[4] = {
       ...mod.steps[4],
       action: { verb: 'navigate', value: '/search?fault=session_warning' },
-      target: { chain: [{ by: 'structural', note: 'navigation target' }], reasoning: 'Fault-injected' },
+      target: { properties: { role: 'navigation', frame: 'main', name: 'search' }, reasoning: 'Fault-injected' },
       // The warning replaces the page; after handler clicks Continue, the session extends
       // and redirects back. The re-anchor will re-resolve s5's expect.
       expect: { textPresent: 'Member Search' },
@@ -161,7 +161,7 @@ describe('Eval Matrix', { timeout: 60000 }, () => {
     mod.steps[4] = {
       ...mod.steps[4],
       action: { verb: 'navigate', value: '/search?fault=slow&ms=3000' },
-      target: { chain: [{ by: 'structural', note: 'navigation target' }], reasoning: 'Slow-injected' },
+      target: { properties: { role: 'navigation', frame: 'main', name: 'search' }, reasoning: 'Slow-injected' },
     };
 
     const start = Date.now();
@@ -177,7 +177,7 @@ describe('Eval Matrix', { timeout: 60000 }, () => {
     mod.steps[4] = {
       ...mod.steps[4],
       action: { verb: 'navigate', value: '/search?fault=app_error' },
-      target: { chain: [{ by: 'structural', note: 'navigation target' }], reasoning: 'Error-injected' },
+      target: { properties: { role: 'navigation', frame: 'main', name: 'search' }, reasoning: 'Error-injected' },
       expect: { textPresent: 'Member Number' },
     };
 

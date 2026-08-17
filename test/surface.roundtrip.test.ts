@@ -4,7 +4,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { type ChildProcess, spawn } from 'node:child_process';
 import { BrowserSurface } from '../src/surface/browser-surface.js';
-import type { Descriptor } from '../src/schema/artifact.js';
+import type { PropertySet } from '../src/schema/artifact.js';
 import type { ElementInfo, Policy } from '../src/surface/surface.js';
 
 const PORT = 3460;
@@ -67,11 +67,10 @@ describe('Surface roundtrip', { timeout: 15000 }, () => {
 
     const chain = await surface.describe(btn!.ref);
     expect(chain.length).toBeGreaterThan(0);
-    expect(chain[0].by).toBe('roleName');
+    expect(chain[0].role).toBe('button');
 
     const result = await surface.resolve(chain);
     expect(result.kind).toBe('match');
-    if (result.kind === 'match') expect(result.rungIndex).toBe(0);
   });
 
   it('login username input: roundtrip (labelProximity or structural)', async () => {
@@ -83,9 +82,9 @@ describe('Surface roundtrip', { timeout: 15000 }, () => {
 
     const chain = await surface.describe(input!.ref);
     expect(chain.length).toBeGreaterThan(0);
-    // Should have either labelProximity or structural (both are valid for hostile UIs)
-    const hasUsableRung = chain.some(d => d.by === 'labelProximity' || d.by === 'structural');
-    expect(hasUsableRung).toBe(true);
+    // Should have a role and frame at minimum (v2 property set)
+    expect(chain[0].role).toBeDefined();
+    expect(chain[0].frame).toBeDefined();
 
     const result = await surface.resolve(chain);
     expect(result.kind).toBe('match');
@@ -110,10 +109,9 @@ describe('Surface roundtrip', { timeout: 15000 }, () => {
     const btn = findEl(obs, e => e.role === 'button' && e.name.includes('Search'));
     expect(btn).toBeDefined();
     const btnChain = await surface.describe(btn!.ref);
-    expect(btnChain[0]?.by).toBe('roleName');
+    expect(btnChain[0]?.role).toBe('button');
     const btnResult = await surface.resolve(btnChain);
     expect(btnResult.kind).toBe('match');
-    if (btnResult.kind === 'match') expect(btnResult.rungIndex).toBe(0);
   });
 
   it('accounts iframe: Savings balance resolves via tableCell', async () => {
@@ -130,22 +128,22 @@ describe('Surface roundtrip', { timeout: 15000 }, () => {
       try { await frame.waitForLoadState('load', { timeout: 2000 }); } catch {}
     }
 
-    const chain: Descriptor[] = [
-      { by: 'tableCell', column: 'Balance', rowContains: 'Savings' },
-    ];
+    // Observe first to get the element's actual properties for scoring
+    const obs = await surface.observe();
+    const targetCell = obs.elements.find(e => e.name?.includes('4,320') && e.frame !== 'main');
+    expect(targetCell).toBeDefined();
+    // Use describe() to get the element's property set, then resolve it
+    const chain = await surface.describe(targetCell!.ref);
     const result = await surface.resolve(chain);
     expect(result.kind).toBe('match');
 
-    // Verify describe() generates rowContains: "Savings" (not "00")
-    // Find the balance cell in the observation
+    // Verify describe() generates a PropertySet with columnHeader
     const obs2 = await surface.observe();
     const balanceCell = obs2.elements.find(e => e.name?.includes('4,320') && e.frame !== 'main');
     if (balanceCell) {
       const descChain = await surface.describe(balanceCell.ref);
-      const tcRung = descChain.find(d => d.by === 'tableCell');
-      if (tcRung && tcRung.by === 'tableCell') {
-        expect(tcRung.rowContains).toBe('Savings');
-      }
+      expect(descChain[0].role).toBe('cell');
+      expect(descChain[0].columnHeader).toBeDefined();
     }
   });
 
@@ -230,14 +228,16 @@ describe('Surface roundtrip', { timeout: 15000 }, () => {
       try { await frame.waitForLoadState('load', { timeout: 2000 }); } catch {}
     }
 
-    const chain: Descriptor[] = [
-      { by: 'tableCell', column: 'Balance', rowContains: 'Savings' },
+    // Observe to find the actual frame name for the iframe
+    const obs23 = await surface.observe();
+    const savingsCells = obs23.elements.filter(e => e.name === 'Savings' && e.frame !== 'main');
+    expect(savingsCells.length).toBeGreaterThanOrEqual(2); // member 23456 has 2+ Savings
+    const frameName = savingsCells[0].frame;
+    const chain: PropertySet[] = [
+      { role: 'cell', frame: frameName, name: 'Savings', columnHeader: 'Type' },
     ];
     const result = await surface.resolve(chain);
     expect(result.kind).toBe('ambiguous');
-    if (result.kind === 'ambiguous') {
-      expect(result.rungReports[0].count).toBeGreaterThan(1);
-    }
   });
 
   // ── NotFound ────────────────────────────────────────────
@@ -247,15 +247,12 @@ describe('Surface roundtrip', { timeout: 15000 }, () => {
     const page = (surface as any).page;
     await page.waitForLoadState('load');
 
-    const chain: Descriptor[] = [
-      { by: 'roleName', role: 'button', name: 'Totally Nonexistent XYZ' },
+    // Use a role that doesn't exist on the page at all
+    const chain: PropertySet[] = [
+      { role: 'slider', frame: 'main', name: 'Totally Nonexistent XYZ', attrName: 'zzz_nope' },
     ];
     const result = await surface.resolve(chain);
     expect(result.kind).toBe('notFound');
-    if (result.kind === 'notFound') {
-      expect(result.rungReports[0].count).toBe(0);
-      expect(result.rungReports[0].reason).toContain('not found');
-    }
   });
 
   // ── Policy ──────────────────────────────────────────────

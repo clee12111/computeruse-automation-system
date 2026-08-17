@@ -1,6 +1,7 @@
 // test/cross-tenant.test.ts — Cross-tenant overlay tests.
 // One artifact, two charters, config-only difference.
 
+import './helpers/trust-sandbox.js';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { type ChildProcess, spawn } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -54,7 +55,7 @@ beforeAll(async () => {
     env: { ...process.env, PORT: String(PORT) }, stdio: 'pipe', cwd: process.cwd(),
   });
   await waitForServer();
-  artifact = loadArtifact(resolve('capabilities/lookup-savings-balance-live.v1.json'));
+  artifact = loadArtifact(resolve('capabilities/lookup-dense-savings.v1.json'));
 }, 30000);
 
 afterAll(() => { server?.kill(); });
@@ -71,23 +72,17 @@ describe('Cross-Tenant Overlay', { timeout: 60000 }, () => {
     expect(body).toContain('Sign In');
   });
 
-  it('R8-NO-OVERLAY: replay on harborview WITHOUT overlay → documents failure', async () => {
-    // Without overlay, the artifact uses "Member Number" anchor which harborview calls "Customer ID"
-    const { result, journal } = await runOnTenant('harborview', { memberId: '12345', ...CREDS });
-
-    // Expected: steps that use vocabulary-specific anchors will fail
-    // Login steps should work (Sign In is the same), but search step will fail
-    // because "Member Number" doesn't exist — harborview says "Customer ID"
-    const journalContent = readFileSync(resolve(journal.runDir, 'journal.jsonl'), 'utf8');
-
-    // The run should fail somewhere after login — document exactly where
+  it('R8-NO-OVERLAY: replay on harborview WITHOUT overlay → HARD_FAILURE (vocabulary drift)', async () => {
+    // lookup-dense-savings uses Cascade CU vocabulary ("Member Number", "Member Search").
+    // On Harborview (which says "Customer ID", "Customer Search"), this fails without an overlay.
+    const { result } = await runOnTenant('harborview', { memberId: '12345', ...CREDS });
     expect(result.status).toBe('HARD_FAILURE');
-    // This failure is EVIDENCE — it proves vocabulary drift blocks replay
     console.log('NO-OVERLAY failure:', result.status, 'at step',
       result.status === 'HARD_FAILURE' ? result.stepId : 'N/A');
   });
 
-  it('R9-WITH-OVERLAY: same artifact + overlay → SUCCESS, same balance', async () => {
+  it('R9-WITH-OVERLAY: same artifact + overlay → SUCCESS on harborview', async () => {
+    // The overlay maps "Member Search" → "Customer Search", "Member" → "Customer", etc.
     const { result, journal } = await runOnTenant('harborview', { memberId: '12345', ...CREDS }, true);
 
     expect(result.status).toBe('SUCCESS');
@@ -95,12 +90,9 @@ describe('Cross-Tenant Overlay', { timeout: 60000 }, () => {
       expect(result.outputs.savingsBalance).toBe(4320.1);
     }
 
-    // Journal should show overlay_applied event
     const journalContent = readFileSync(resolve(journal.runDir, 'journal.jsonl'), 'utf8');
     expect(journalContent).toContain('overlay_applied');
     expect(journalContent).toContain('harborview');
-
-    // THE cross-tenant demo: one artifact, two charters, config-only
     console.log('WITH-OVERLAY success: same balance, different vocabulary');
   });
 

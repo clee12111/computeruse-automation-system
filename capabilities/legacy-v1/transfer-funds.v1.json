@@ -1,0 +1,413 @@
+{
+  "name": "transfer-funds",
+  "version": "1.2.0",
+  "app": {
+    "id": "cascade-cu-console",
+    "startPath": "/login"
+  },
+  "inputs": {
+    "memberId": {
+      "type": "string",
+      "pattern": "^[0-9]{5}$",
+      "sensitive": false
+    },
+    "fromAccount": {
+      "type": "string",
+      "sensitive": false
+    },
+    "toAccount": {
+      "type": "string",
+      "sensitive": false
+    },
+    "amount": {
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]{1,2})?$",
+      "sensitive": false
+    },
+    "username": {
+      "type": "string",
+      "sensitive": true
+    },
+    "password": {
+      "type": "string",
+      "sensitive": true
+    }
+  },
+  "outputs": {
+    "referenceNumber": {
+      "type": "string",
+      "sensitive": false
+    }
+  },
+  "businessOutcomes": {
+    "PERMISSION_DENIED": {
+      "detect": {
+        "textPresent": "Insufficient privileges"
+      }
+    },
+    "INSUFFICIENT_FUNDS": {
+      "detect": {
+        "textPresent": "Insufficient funds"
+      }
+    }
+  },
+  "steps": [
+    {
+      "id": "s1",
+      "intent": "Navigate to login",
+      "action": {
+        "verb": "navigate",
+        "value": "/login"
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "structural",
+            "note": "navigation target"
+          }
+        ],
+        "reasoning": "Page-level navigation."
+      },
+      "risk": "safe",
+      "expect": {
+        "textPresent": "Sign In"
+      }
+    },
+    {
+      "id": "s2",
+      "intent": "Enter username",
+      "action": {
+        "verb": "type",
+        "value": {
+          "$input": "username"
+        }
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "labelProximity",
+            "role": "textbox",
+            "anchor": "Username"
+          }
+        ],
+        "reasoning": "Login form username field."
+      },
+      "risk": "safe",
+      "expect": {
+        "elementValue": {
+          "$self": true
+        }
+      }
+    },
+    {
+      "id": "s3",
+      "intent": "Enter password",
+      "action": {
+        "verb": "type",
+        "value": {
+          "$input": "password"
+        }
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "labelProximity",
+            "role": "textbox",
+            "anchor": "Password"
+          }
+        ],
+        "reasoning": "Login form password field."
+      },
+      "risk": "safe",
+      "expect": {
+        "elementValue": {
+          "$self": true
+        }
+      }
+    },
+    {
+      "id": "s4",
+      "intent": "Click Sign In",
+      "action": {
+        "verb": "click"
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "roleName",
+            "role": "button",
+            "name": "Sign In"
+          }
+        ],
+        "reasoning": "Login submit button."
+      },
+      "risk": "safe",
+      "expect": {
+        "textPresent": "Dashboard"
+      }
+    },
+    {
+      "id": "s5",
+      "intent": "Navigate to member search",
+      "action": {
+        "verb": "navigate",
+        "value": "/search"
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "structural",
+            "note": "navigation target"
+          }
+        ],
+        "reasoning": "Navigate to search."
+      },
+      "risk": "safe",
+      "expect": {
+        "textPresent": "Member Number"
+      }
+    },
+    {
+      "id": "s6",
+      "intent": "Enter member number",
+      "action": {
+        "verb": "type",
+        "value": {
+          "$input": "memberId"
+        }
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "labelProximity",
+            "role": "textbox",
+            "anchor": "Member Number"
+          }
+        ],
+        "reasoning": "Search form input."
+      },
+      "risk": "safe",
+      "expect": {
+        "elementValue": {
+          "$self": true
+        }
+      }
+    },
+    {
+      "id": "s7",
+      "intent": "Submit search",
+      "action": {
+        "verb": "click"
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "roleName",
+            "role": "button",
+            "name": "Member Search"
+          }
+        ],
+        "reasoning": "Search submit button."
+      },
+      "risk": "safe",
+      "expect": {
+        "textPresent": "Member Details"
+      },
+      "onCondition": [
+        {
+          "if": {
+            "textPresent": "Compliance Notice"
+          },
+          "do": [
+            {
+              "verb": "click",
+              "targetName": "checkbox:compliance"
+            },
+            {
+              "verb": "click",
+              "targetName": "Continue"
+            }
+          ],
+          "maxApplies": 2
+        }
+      ]
+    },
+    {
+      "id": "s8",
+      "intent": "Click Transfer Funds link",
+      "action": {
+        "verb": "click"
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "roleName",
+            "role": "link",
+            "name": "Transfer Funds"
+          }
+        ],
+        "reasoning": "Transfer link on member detail page."
+      },
+      "risk": "safe",
+      "expect": {
+        "anyOf": [
+          {
+            "textPresent": "Transfer Funds"
+          },
+          {
+            "$outcome": "PERMISSION_DENIED"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s9",
+      "intent": "Select from-account",
+      "action": {
+        "verb": "select",
+        "value": {
+          "$input": "fromAccount"
+        }
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "labelProximity",
+            "role": "combobox",
+            "anchor": "From Account"
+          }
+        ],
+        "reasoning": "Source account dropdown."
+      },
+      "risk": "safe",
+      "expect": {
+        "elementValue": {
+          "$self": true
+        }
+      }
+    },
+    {
+      "id": "s10",
+      "intent": "Select to-account",
+      "action": {
+        "verb": "select",
+        "value": {
+          "$input": "toAccount"
+        }
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "labelProximity",
+            "role": "combobox",
+            "anchor": "To Account"
+          }
+        ],
+        "reasoning": "Destination account dropdown."
+      },
+      "risk": "safe",
+      "expect": {
+        "elementValue": {
+          "$self": true
+        }
+      }
+    },
+    {
+      "id": "s11",
+      "intent": "Enter transfer amount",
+      "action": {
+        "verb": "type",
+        "value": {
+          "$input": "amount"
+        }
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "labelProximity",
+            "role": "textbox",
+            "anchor": "Amount"
+          }
+        ],
+        "reasoning": "Transfer amount input."
+      },
+      "risk": "safe",
+      "expect": {
+        "elementValue": {
+          "$self": true
+        }
+      }
+    },
+    {
+      "id": "s12",
+      "intent": "Submit for review",
+      "action": {
+        "verb": "click"
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "roleName",
+            "role": "button",
+            "name": "Review Transfer"
+          }
+        ],
+        "reasoning": "Review button."
+      },
+      "risk": "safe",
+      "expect": {
+        "anyOf": [
+          {
+            "textPresent": "Execute Transfer"
+          },
+          {
+            "$outcome": "INSUFFICIENT_FUNDS"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s13",
+      "intent": "Execute the transfer",
+      "action": {
+        "verb": "click"
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "roleName",
+            "role": "button",
+            "name": "Execute Transfer"
+          }
+        ],
+        "reasoning": "Confirm and execute the transfer."
+      },
+      "risk": "risky",
+      "expect": {
+        "textPresent": "Transfer Complete"
+      }
+    },
+    {
+      "id": "s14",
+      "intent": "Read the transfer reference number",
+      "action": {
+        "verb": "read",
+        "parseAs": "string",
+        "saveTo": "referenceNumber"
+      },
+      "target": {
+        "chain": [
+          {
+            "by": "structural",
+            "note": "cell containing REF-"
+          }
+        ],
+        "reasoning": "Reference number cell identified by its REF- prefix text content."
+      },
+      "risk": "safe",
+      "expect": {
+        "outputPopulated": "referenceNumber"
+      }
+    }
+  ]
+}

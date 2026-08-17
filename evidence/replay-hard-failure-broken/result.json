@@ -1,0 +1,9 @@
+{
+  "status": "HARD_FAILURE",
+  "stepId": "s7",
+  "expected": "{\"anyOf\":[{\"$outcome\":\"MEMBER_NOT_FOUND\"},{\"textPresent\":\"Member Details\"}]}",
+  "observed": "Arbitration timeout (15000ms)",
+  "evidenceRefs": [
+    "C:\\Users\\ppeng\\Desktop\\Interface\\computeruse-automation-system\\evidence\\runs\\2026-08-16T05-33-10-883Z-lookup-dense-savings\\obs-5.png"
+  ]
+}

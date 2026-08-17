@@ -8,6 +8,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const D = require('./data');
 
+const faultedSessions = new Set(); // track which sessions have already been faulted
 const tenantsDir = path.join(__dirname, 'tenants');
 const tenants = {};
 for (const file of fs.readdirSync(tenantsDir)) {
@@ -905,7 +906,7 @@ async function handleRequest(req, res) {
 
   // Faults
   if (fault==='app_error') return send(res,500,pgAppErr(t,s,px));
-  if (fault==='session_expired') { sessions.delete(s.sid); return redir(res,`${px}/login?expired=1`); }
+  if (fault==='session_expired') { const fk=s.username+'@session_expired'; if(!faultedSessions.has(fk)){faultedSessions.add(fk);sessions.delete(s.sid);return redir(res,`${px}/login?expired=1`);} }
   if (fault==='session_warning') { const cl=pn+(url.search?url.search.replace(/[?&]fault=session_warning/,''):''); return send(res,200,pgSessWarn(t,s,px,cl||px+'/dashboard')); }
 
   // Session warning (organic)

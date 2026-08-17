@@ -17,15 +17,18 @@ export interface TrustStore {
   [key: string]: TrustEntry; // key = "name@version"
 }
 
-const TRUST_PATH = resolve('capabilities/trust.json');
+function getTrustPath(): string {
+  return process.env.TRUST_STORE_PATH || resolve('capabilities/trust.json');
+}
 
 export function loadTrust(): TrustStore {
-  if (!existsSync(TRUST_PATH)) return {};
-  return JSON.parse(readFileSync(TRUST_PATH, 'utf8'));
+  const p = getTrustPath();
+  if (!existsSync(p)) return {};
+  return JSON.parse(readFileSync(p, 'utf8'));
 }
 
 export function saveTrust(store: TrustStore): void {
-  writeFileSync(TRUST_PATH, JSON.stringify(store, null, 2) + '\n');
+  writeFileSync(getTrustPath(), JSON.stringify(store, null, 2) + '\n');
 }
 
 export function trustKey(name: string, version: string): string {
@@ -49,6 +52,13 @@ export function approveCapability(name: string, version: string, note?: string):
   store[key] = entry;
   saveTrust(store);
   return entry;
+}
+
+export function revokeCapability(name: string, version: string): void {
+  const store = loadTrust();
+  const key = trustKey(name, version);
+  delete store[key];
+  saveTrust(store);
 }
 
 // ── Naive dossier (shape visible now; full computation is Phase 9.2) ──

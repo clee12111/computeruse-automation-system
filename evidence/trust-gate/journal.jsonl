@@ -1,0 +1,62 @@
+{"event":"step_start","stepId":"s1","intent":"Navigate to login","controller":"machine","timestamp":"2026-08-16T05:36:50.351Z"}
+{"event":"navigate","stepId":"s1","path":"/login","controller":"machine","timestamp":"2026-08-16T05:36:50.352Z"}
+{"event":"expect_passed","stepId":"s1","controller":"machine","timestamp":"2026-08-16T05:36:50.399Z"}
+{"event":"step_start","stepId":"s2","intent":"Enter username","controller":"machine","timestamp":"2026-08-16T05:36:50.399Z"}
+{"event":"rung_matched","stepId":"s2","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:36:50.471Z"}
+{"event":"scoring_result","stepId":"s2","topScore":8.5,"margin":0.31152204836415365,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:36:50.471Z"}
+{"event":"acted","stepId":"s2","verb":"type","controller":"machine","timestamp":"2026-08-16T05:36:50.480Z"}
+{"event":"expect_passed","stepId":"s2","controller":"machine","timestamp":"2026-08-16T05:36:50.480Z"}
+{"event":"step_start","stepId":"s3","intent":"Enter password","controller":"machine","timestamp":"2026-08-16T05:36:50.481Z"}
+{"event":"rung_matched","stepId":"s3","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:36:50.542Z"}
+{"event":"scoring_result","stepId":"s3","topScore":8.5,"margin":0.31152204836415365,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:36:50.542Z"}
+{"event":"acted","stepId":"s3","verb":"type","controller":"machine","timestamp":"2026-08-16T05:36:50.548Z"}
+{"event":"expect_passed","stepId":"s3","controller":"machine","timestamp":"2026-08-16T05:36:50.549Z"}
+{"event":"step_start","stepId":"s4","intent":"Click Sign In","controller":"machine","timestamp":"2026-08-16T05:36:50.549Z"}
+{"event":"rung_matched","stepId":"s4","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:36:50.614Z"}
+{"event":"scoring_result","stepId":"s4","topScore":7.742720436939566,"margin":0.26935984969909316,"matchedRole":"button","controller":"machine","timestamp":"2026-08-16T05:36:50.614Z"}
+{"event":"acted","stepId":"s4","verb":"click","controller":"machine","timestamp":"2026-08-16T05:36:50.680Z"}
+{"event":"expect_passed","stepId":"s4","controller":"machine","timestamp":"2026-08-16T05:36:50.711Z"}
+{"event":"step_start","stepId":"s5","intent":"Navigate to member search","controller":"machine","timestamp":"2026-08-16T05:36:50.711Z"}
+{"event":"navigate","stepId":"s5","path":"/search","controller":"machine","timestamp":"2026-08-16T05:36:50.711Z"}
+{"event":"expect_passed","stepId":"s5","controller":"machine","timestamp":"2026-08-16T05:36:50.734Z"}
+{"event":"step_start","stepId":"s6","intent":"Enter member number","controller":"machine","timestamp":"2026-08-16T05:36:50.735Z"}
+{"event":"rung_matched","stepId":"s6","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:36:50.803Z"}
+{"event":"scoring_result","stepId":"s6","topScore":8.5,"margin":0.30895034195658644,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:36:50.803Z"}
+{"event":"acted","stepId":"s6","verb":"type","controller":"machine","timestamp":"2026-08-16T05:36:50.809Z"}
+{"event":"expect_passed","stepId":"s6","controller":"machine","timestamp":"2026-08-16T05:36:50.810Z"}
+{"event":"step_start","stepId":"s7","intent":"Submit search","controller":"machine","timestamp":"2026-08-16T05:36:50.810Z"}
+{"event":"rung_matched","stepId":"s7","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:36:50.848Z"}
+{"event":"scoring_result","stepId":"s7","topScore":7.738577663713623,"margin":0.2620065754580336,"matchedRole":"button","controller":"machine","timestamp":"2026-08-16T05:36:50.849Z"}
+{"event":"acted","stepId":"s7","verb":"click","controller":"machine","timestamp":"2026-08-16T05:36:50.910Z"}
+{"event":"expect_passed","stepId":"s7","controller":"machine","timestamp":"2026-08-16T05:36:50.949Z"}
+{"event":"step_start","stepId":"s8","intent":"Click Transfer Funds link","controller":"machine","timestamp":"2026-08-16T05:36:50.950Z"}
+{"event":"rung_matched","stepId":"s8","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:36:51.043Z"}
+{"event":"scoring_result","stepId":"s8","topScore":6.75,"margin":0.0601503759398496,"matchedRole":"link","controller":"machine","timestamp":"2026-08-16T05:36:51.043Z"}
+{"event":"low_margin_warning","stepId":"s8","margin":0.0601503759398496,"topScore":6.75,"controller":"machine","timestamp":"2026-08-16T05:36:51.044Z"}
+{"event":"acted","stepId":"s8","verb":"click","controller":"machine","timestamp":"2026-08-16T05:36:51.112Z"}
+{"event":"expect_passed","stepId":"s8","controller":"machine","timestamp":"2026-08-16T05:36:51.129Z"}
+{"event":"step_start","stepId":"s9","intent":"Select from-account","controller":"machine","timestamp":"2026-08-16T05:36:51.129Z"}
+{"event":"rung_matched","stepId":"s9","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:36:51.200Z"}
+{"event":"scoring_result","stepId":"s9","topScore":6.75,"margin":0.07017543859649127,"matchedRole":"combobox","controller":"machine","timestamp":"2026-08-16T05:36:51.201Z"}
+{"event":"low_margin_warning","stepId":"s9","margin":0.07017543859649127,"topScore":6.75,"controller":"machine","timestamp":"2026-08-16T05:36:51.201Z"}
+{"event":"acted","stepId":"s9","verb":"select","controller":"machine","timestamp":"2026-08-16T05:36:51.207Z"}
+{"event":"expect_passed","stepId":"s9","controller":"machine","timestamp":"2026-08-16T05:36:51.208Z"}
+{"event":"step_start","stepId":"s10","intent":"Select to-account","controller":"machine","timestamp":"2026-08-16T05:36:51.208Z"}
+{"event":"rung_matched","stepId":"s10","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:36:51.256Z"}
+{"event":"scoring_result","stepId":"s10","topScore":6.75,"margin":0.07017543859649127,"matchedRole":"combobox","controller":"machine","timestamp":"2026-08-16T05:36:51.256Z"}
+{"event":"low_margin_warning","stepId":"s10","margin":0.07017543859649127,"topScore":6.75,"controller":"machine","timestamp":"2026-08-16T05:36:51.257Z"}
+{"event":"acted","stepId":"s10","verb":"select","controller":"machine","timestamp":"2026-08-16T05:36:51.260Z"}
+{"event":"expect_passed","stepId":"s10","controller":"machine","timestamp":"2026-08-16T05:36:51.261Z"}
+{"event":"step_start","stepId":"s11","intent":"Enter transfer amount","controller":"machine","timestamp":"2026-08-16T05:36:51.261Z"}
+{"event":"rung_matched","stepId":"s11","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:36:51.309Z"}
+{"event":"scoring_result","stepId":"s11","topScore":6.75,"margin":0.10526315789473684,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:36:51.309Z"}
+{"event":"low_margin_warning","stepId":"s11","margin":0.10526315789473684,"topScore":6.75,"controller":"machine","timestamp":"2026-08-16T05:36:51.309Z"}
+{"event":"acted","stepId":"s11","verb":"type","controller":"machine","timestamp":"2026-08-16T05:36:51.315Z"}
+{"event":"expect_passed","stepId":"s11","controller":"machine","timestamp":"2026-08-16T05:36:51.315Z"}
+{"event":"step_start","stepId":"s12","intent":"Submit for review","controller":"machine","timestamp":"2026-08-16T05:36:51.315Z"}
+{"event":"rung_matched","stepId":"s12","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:36:51.385Z"}
+{"event":"scoring_result","stepId":"s12","topScore":6.75,"margin":0.10526315789473684,"matchedRole":"button","controller":"machine","timestamp":"2026-08-16T05:36:51.385Z"}
+{"event":"low_margin_warning","stepId":"s12","margin":0.10526315789473684,"topScore":6.75,"controller":"machine","timestamp":"2026-08-16T05:36:51.385Z"}
+{"event":"acted","stepId":"s12","verb":"click","controller":"machine","timestamp":"2026-08-16T05:36:51.427Z"}
+{"event":"expect_passed","stepId":"s12","controller":"machine","timestamp":"2026-08-16T05:36:51.445Z"}
+{"event":"step_start","stepId":"s13","intent":"Execute the transfer","controller":"machine","timestamp":"2026-08-16T05:36:51.446Z"}

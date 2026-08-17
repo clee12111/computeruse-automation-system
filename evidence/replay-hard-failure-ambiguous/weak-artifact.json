@@ -1,0 +1,12 @@
+{
+  "name": "weak-test",
+  "version": "2.0.0",
+  "app": { "id": "vendor-console", "startPath": "/t/cascade-cu/search" },
+  "inputs": { "memberId": { "type": "string", "pattern": "^[0-9]{5}$", "sensitive": false }, "username": { "type": "string", "sensitive": true }, "password": { "type": "string", "sensitive": true } },
+  "outputs": { "balance": { "type": "money", "sensitive": true } },
+  "businessOutcomes": {},
+  "steps": [
+    { "id": "s1", "intent": "Navigate to login", "action": { "verb": "navigate", "value": "/t/cascade-cu/search" }, "target": { "properties": { "role": "navigation", "frame": "main" }, "reasoning": "nav" }, "risk": "safe", "expect": { "textPresent": "Sign In" } },
+    { "id": "s2", "intent": "Type username", "action": { "verb": "type", "value": { "$input": "username" } }, "target": { "properties": { "role": "textbox", "frame": "main" }, "reasoning": "deliberately weak — role+frame only, no name or attrName" }, "risk": "safe", "expect": { "elementValue": { "$self": true } } }
+  ]
+}

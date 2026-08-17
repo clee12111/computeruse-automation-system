@@ -1,9 +1,9 @@
 {
   "name": "transfer-funds",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "app": {
-    "id": "cascade-cu-console",
-    "startPath": "/login"
+    "id": "vendor-console",
+    "startPath": "/search"
   },
   "inputs": {
     "memberId": {
@@ -36,6 +36,7 @@
   "outputs": {
     "referenceNumber": {
       "type": "string",
+      "pattern": "^[A-Z0-9-]{4,20}$",
       "sensitive": false
     }
   },
@@ -60,12 +61,7 @@
         "value": "/login"
       },
       "target": {
-        "chain": [
-          {
-            "by": "structural",
-            "note": "navigation target"
-          }
-        ],
+        "properties": { "role": "navigation", "frame": "main" },
         "reasoning": "Page-level navigation."
       },
       "risk": "safe",
@@ -78,25 +74,22 @@
       "intent": "Enter username",
       "action": {
         "verb": "type",
-        "value": {
-          "$input": "username"
-        }
+        "value": { "$input": "username" }
       },
       "target": {
-        "chain": [
-          {
-            "by": "labelProximity",
-            "role": "textbox",
-            "anchor": "Username"
-          }
-        ],
+        "properties": {
+          "role": "textbox",
+          "frame": "main",
+          "attrName": "f1",
+          "neighborText": ["Username"],
+          "position": { "x": 705, "y": 245 },
+          "size": { "w": 156, "h": 18 }
+        },
         "reasoning": "Login form username field."
       },
       "risk": "safe",
       "expect": {
-        "elementValue": {
-          "$self": true
-        }
+        "elementValue": { "$self": true }
       }
     },
     {
@@ -104,25 +97,22 @@
       "intent": "Enter password",
       "action": {
         "verb": "type",
-        "value": {
-          "$input": "password"
-        }
+        "value": { "$input": "password" }
       },
       "target": {
-        "chain": [
-          {
-            "by": "labelProximity",
-            "role": "textbox",
-            "anchor": "Password"
-          }
-        ],
+        "properties": {
+          "role": "textbox",
+          "frame": "main",
+          "attrName": "f2",
+          "neighborText": ["Password"],
+          "position": { "x": 705, "y": 330 },
+          "size": { "w": 156, "h": 18 }
+        },
         "reasoning": "Login form password field."
       },
       "risk": "safe",
       "expect": {
-        "elementValue": {
-          "$self": true
-        }
+        "elementValue": { "$self": true }
       }
     },
     {
@@ -132,13 +122,13 @@
         "verb": "click"
       },
       "target": {
-        "chain": [
-          {
-            "by": "roleName",
-            "role": "button",
-            "name": "Sign In"
-          }
-        ],
+        "properties": {
+          "role": "button",
+          "frame": "main",
+          "name": "Sign In",
+          "position": { "x": 660, "y": 417 },
+          "size": { "w": 65, "h": 23 }
+        },
         "reasoning": "Login submit button."
       },
       "risk": "safe",
@@ -154,12 +144,7 @@
         "value": "/search"
       },
       "target": {
-        "chain": [
-          {
-            "by": "structural",
-            "note": "navigation target"
-          }
-        ],
+        "properties": { "role": "navigation", "frame": "main" },
         "reasoning": "Navigate to search."
       },
       "risk": "safe",
@@ -172,25 +157,22 @@
       "intent": "Enter member number",
       "action": {
         "verb": "type",
-        "value": {
-          "$input": "memberId"
-        }
+        "value": { "$input": "memberId" }
       },
       "target": {
-        "chain": [
-          {
-            "by": "labelProximity",
-            "role": "textbox",
-            "anchor": "Member Number"
-          }
-        ],
+        "properties": {
+          "role": "textbox",
+          "frame": "main",
+          "attrName": "f1",
+          "neighborText": ["Member", "Number"],
+          "position": { "x": 417, "y": 167 },
+          "size": { "w": 146, "h": 18 }
+        },
         "reasoning": "Search form input."
       },
       "risk": "safe",
       "expect": {
-        "elementValue": {
-          "$self": true
-        }
+        "elementValue": { "$self": true }
       }
     },
     {
@@ -200,13 +182,13 @@
         "verb": "click"
       },
       "target": {
-        "chain": [
-          {
-            "by": "roleName",
-            "role": "button",
-            "name": "Member Search"
-          }
-        ],
+        "properties": {
+          "role": "button",
+          "frame": "main",
+          "name": "Member Search",
+          "position": { "x": 397, "y": 323 },
+          "size": { "w": 106, "h": 23 }
+        },
         "reasoning": "Search submit button."
       },
       "risk": "safe",
@@ -239,24 +221,18 @@
         "verb": "click"
       },
       "target": {
-        "chain": [
-          {
-            "by": "roleName",
-            "role": "link",
-            "name": "Transfer Funds"
-          }
-        ],
+        "properties": {
+          "role": "link",
+          "frame": "main",
+          "name": "Transfer Funds"
+        },
         "reasoning": "Transfer link on member detail page."
       },
       "risk": "safe",
       "expect": {
         "anyOf": [
-          {
-            "textPresent": "Transfer Funds"
-          },
-          {
-            "$outcome": "PERMISSION_DENIED"
-          }
+          { "textPresent": "Transfer Funds" },
+          { "$outcome": "PERMISSION_DENIED" }
         ]
       }
     },
@@ -265,25 +241,19 @@
       "intent": "Select from-account",
       "action": {
         "verb": "select",
-        "value": {
-          "$input": "fromAccount"
-        }
+        "value": { "$input": "fromAccount" }
       },
       "target": {
-        "chain": [
-          {
-            "by": "labelProximity",
-            "role": "combobox",
-            "anchor": "From Account"
-          }
-        ],
+        "properties": {
+          "role": "combobox",
+          "frame": "main",
+          "neighborText": ["From", "Account"]
+        },
         "reasoning": "Source account dropdown."
       },
       "risk": "safe",
       "expect": {
-        "elementValue": {
-          "$self": true
-        }
+        "elementValue": { "$self": true }
       }
     },
     {
@@ -291,25 +261,19 @@
       "intent": "Select to-account",
       "action": {
         "verb": "select",
-        "value": {
-          "$input": "toAccount"
-        }
+        "value": { "$input": "toAccount" }
       },
       "target": {
-        "chain": [
-          {
-            "by": "labelProximity",
-            "role": "combobox",
-            "anchor": "To Account"
-          }
-        ],
+        "properties": {
+          "role": "combobox",
+          "frame": "main",
+          "neighborText": ["To", "Account"]
+        },
         "reasoning": "Destination account dropdown."
       },
       "risk": "safe",
       "expect": {
-        "elementValue": {
-          "$self": true
-        }
+        "elementValue": { "$self": true }
       }
     },
     {
@@ -317,25 +281,19 @@
       "intent": "Enter transfer amount",
       "action": {
         "verb": "type",
-        "value": {
-          "$input": "amount"
-        }
+        "value": { "$input": "amount" }
       },
       "target": {
-        "chain": [
-          {
-            "by": "labelProximity",
-            "role": "textbox",
-            "anchor": "Amount"
-          }
-        ],
+        "properties": {
+          "role": "textbox",
+          "frame": "main",
+          "neighborText": ["Amount"]
+        },
         "reasoning": "Transfer amount input."
       },
       "risk": "safe",
       "expect": {
-        "elementValue": {
-          "$self": true
-        }
+        "elementValue": { "$self": true }
       }
     },
     {
@@ -345,24 +303,18 @@
         "verb": "click"
       },
       "target": {
-        "chain": [
-          {
-            "by": "roleName",
-            "role": "button",
-            "name": "Review Transfer"
-          }
-        ],
+        "properties": {
+          "role": "button",
+          "frame": "main",
+          "name": "Review Transfer"
+        },
         "reasoning": "Review button."
       },
       "risk": "safe",
       "expect": {
         "anyOf": [
-          {
-            "textPresent": "Execute Transfer"
-          },
-          {
-            "$outcome": "INSUFFICIENT_FUNDS"
-          }
+          { "textPresent": "Execute Transfer" },
+          { "$outcome": "INSUFFICIENT_FUNDS" }
         ]
       }
     },
@@ -373,13 +325,11 @@
         "verb": "click"
       },
       "target": {
-        "chain": [
-          {
-            "by": "roleName",
-            "role": "button",
-            "name": "Execute Transfer"
-          }
-        ],
+        "properties": {
+          "role": "button",
+          "frame": "main",
+          "name": "Execute Transfer"
+        },
         "reasoning": "Confirm and execute the transfer."
       },
       "risk": "risky",
@@ -396,13 +346,12 @@
         "saveTo": "referenceNumber"
       },
       "target": {
-        "chain": [
-          {
-            "by": "structural",
-            "note": "cell containing REF-"
-          }
-        ],
-        "reasoning": "Reference number cell identified by its REF- prefix text content."
+        "properties": {
+          "role": "cell",
+          "frame": "main",
+          "neighborText": ["Reference"]
+        },
+        "reasoning": "Reference number cell in the row labeled 'Reference #'."
       },
       "risk": "safe",
       "expect": {

@@ -1,0 +1,53 @@
+{"event":"discovery_start","name":"transfer-500-from-member-60020-savings-t","goal":"transfer 500 from member 60020 savings to checking","controller":"machine","timestamp":"2026-08-17T08:41:20.346Z"}
+{"event":"initial_navigate_expect","text":"Sign In","verified":true,"controller":"machine","timestamp":"2026-08-17T08:41:20.947Z"}
+{"event":"observed","step":1,"elements":23,"iframeElements":0,"url":"http://localhost:3000/t/cascade-cu/login","headings":[],"buttons":["Sign In"],"fields":["f1","f2"],"controller":"machine","timestamp":"2026-08-17T08:41:21.287Z"}
+{"event":"decision","step":1,"tool":"act","verb":"type","intent":"Enter the provided username into the login form.","value":"<sensitive:username>","targetName":"textbox","targetRole":"textbox","controller":"machine","timestamp":"2026-08-17T08:41:26.200Z"}
+{"event":"resolve_result","step":1,"kind":"match","chainLen":1,"controller":"machine","timestamp":"2026-08-17T08:41:26.279Z"}
+{"event":"act_result","step":1,"ok":true,"readValue":null,"verb":"type","controller":"machine","timestamp":"2026-08-17T08:41:26.291Z"}
+{"event":"step_ok","step":1,"verb":"type","rungCount":1,"controller":"machine","timestamp":"2026-08-17T08:41:26.292Z"}
+{"event":"observed","step":2,"elements":23,"iframeElements":0,"url":"http://localhost:3000/t/cascade-cu/login","headings":[],"buttons":["Sign In"],"fields":["f1","f2"],"controller":"machine","timestamp":"2026-08-17T08:41:26.634Z"}
+{"event":"decision","step":2,"tool":"act","verb":"type","intent":"Enter the provided password","value":"<sensitive:password>","targetName":"textbox","targetRole":"textbox","controller":"machine","timestamp":"2026-08-17T08:41:30.348Z"}
+{"event":"same_action_warning","verbTarget":"type:","controller":"machine","timestamp":"2026-08-17T08:41:30.349Z"}
+{"event":"resolve_result","step":2,"kind":"match","chainLen":1,"controller":"machine","timestamp":"2026-08-17T08:41:30.425Z"}
+{"event":"act_result","step":2,"ok":true,"readValue":null,"verb":"type","controller":"machine","timestamp":"2026-08-17T08:41:30.433Z"}
+{"event":"step_ok","step":2,"verb":"type","rungCount":1,"controller":"machine","timestamp":"2026-08-17T08:41:30.433Z"}
+{"event":"observed","step":3,"elements":23,"iframeElements":0,"url":"http://localhost:3000/t/cascade-cu/login","headings":[],"buttons":["Sign In"],"fields":["f1","f2"],"controller":"machine","timestamp":"2026-08-17T08:41:30.813Z"}
+{"event":"decision","step":3,"tool":"act","verb":"click","intent":"Submit the login form with the provided credentials","targetName":"Sign In","targetRole":"button","controller":"machine","timestamp":"2026-08-17T08:41:34.568Z"}
+{"event":"resolve_result","step":3,"kind":"match","chainLen":1,"controller":"machine","timestamp":"2026-08-17T08:41:34.615Z"}
+{"event":"act_result","step":3,"ok":true,"readValue":null,"verb":"click","controller":"machine","timestamp":"2026-08-17T08:41:34.684Z"}
+{"event":"step_ok","step":3,"verb":"click","rungCount":1,"controller":"machine","timestamp":"2026-08-17T08:41:34.712Z"}
+{"event":"observed","step":4,"elements":64,"iframeElements":0,"url":"http://localhost:3000/t/cascade-cu/dashboard","headings":[],"buttons":["Go","Sign Off","Member Search","New Membership","Trackers","Teller Line","Drawer","Misc Receipts"],"fields":["Code"],"controller":"machine","timestamp":"2026-08-17T08:41:35.101Z"}
+{"event":"decision","step":4,"tool":"act","verb":"click","intent":"Open member search to locate member 60020 for the transfer.","targetName":"Member Search","targetRole":"link","controller":"machine","timestamp":"2026-08-17T08:41:38.061Z"}
+{"event":"resolve_result","step":4,"kind":"match","chainLen":1,"controller":"machine","timestamp":"2026-08-17T08:41:38.120Z"}
+{"event":"act_result","step":4,"ok":true,"readValue":null,"verb":"click","controller":"machine","timestamp":"2026-08-17T08:41:38.159Z"}
+{"event":"step_ok","step":4,"verb":"click","rungCount":1,"controller":"machine","timestamp":"2026-08-17T08:41:38.174Z"}
+{"event":"observed","step":5,"elements":63,"iframeElements":0,"url":"http://localhost:3000/t/cascade-cu/search","headings":[],"buttons":["Go","Sign Off","Member Search","New Membership","Trackers","Teller Line","Drawer","Misc Receipts"],"fields":["Code","f1","f2"],"controller":"machine","timestamp":"2026-08-17T08:41:38.534Z"}
+{"event":"decision","step":5,"tool":"act","verb":"type","intent":"Enter member number 60020 to search for the requested member","value":"60020","targetName":"textbox","targetRole":"textbox","controller":"machine","timestamp":"2026-08-17T08:41:41.008Z"}
+{"event":"resolve_result","step":5,"kind":"match","chainLen":1,"controller":"machine","timestamp":"2026-08-17T08:41:41.079Z"}
+{"event":"act_result","step":5,"ok":true,"readValue":null,"verb":"type","controller":"machine","timestamp":"2026-08-17T08:41:41.085Z"}
+{"event":"step_ok","step":5,"verb":"type","rungCount":1,"controller":"machine","timestamp":"2026-08-17T08:41:41.085Z"}
+{"event":"observed","step":6,"elements":63,"iframeElements":0,"url":"http://localhost:3000/t/cascade-cu/search","headings":[],"buttons":["Go","Sign Off","Member Search","New Membership","Trackers","Teller Line","Drawer","Misc Receipts"],"fields":["Code","f1","f2"],"controller":"machine","timestamp":"2026-08-17T08:41:41.418Z"}
+{"event":"decision","step":6,"tool":"act","verb":"click","intent":"Submit the member search for member 60020.","targetName":"Member Search","targetRole":"button","controller":"machine","timestamp":"2026-08-17T08:41:43.466Z"}
+{"event":"resolve_result","step":6,"kind":"match","chainLen":1,"controller":"machine","timestamp":"2026-08-17T08:41:43.518Z"}
+{"event":"act_result","step":6,"ok":true,"readValue":null,"verb":"click","controller":"machine","timestamp":"2026-08-17T08:41:43.572Z"}
+{"event":"step_ok","step":6,"verb":"click","rungCount":1,"controller":"machine","timestamp":"2026-08-17T08:41:43.595Z"}
+{"event":"observed","step":7,"elements":120,"iframeElements":29,"url":"http://localhost:3000/t/cascade-cu/member?q=60020","headings":[],"buttons":["Go","Sign Off","Member Search","New Membership","Trackers","Teller Line","Drawer","Misc Receipts"],"fields":["Code"],"controller":"machine","timestamp":"2026-08-17T08:41:43.972Z"}
+{"event":"decision","step":7,"tool":"act","verb":"click","intent":"Open the member transfer funds form for member 60020.","targetName":"Transfer Funds","targetRole":"link","controller":"machine","timestamp":"2026-08-17T08:41:46.454Z"}
+{"event":"resolve_result","step":7,"kind":"match","chainLen":1,"controller":"machine","timestamp":"2026-08-17T08:41:46.518Z"}
+{"event":"risky_action_detected","step":7,"verb":"click","targetName":"Transfer Funds","url":"http://localhost:3000/t/cascade-cu/member?q=60020","controller":"machine","timestamp":"2026-08-17T08:41:46.519Z"}
+{"event":"control_transfer","to":"human","stepId":"step-7","reason":"About to click \"Transfer Funds\" — requires human authorization","controller":"machine","timestamp":"2026-08-17T08:41:46.519Z"}
+{"event":"window_before","stepId":"step-7","url":"http://localhost:3000/t/cascade-cu/member?q=60020","elements":120,"headings":[],"controller":"machine","timestamp":"2026-08-17T08:41:46.519Z"}
+{"event":"window_after","stepId":"step-7","url":"http://localhost:3000/t/cascade-cu/member?q=60020","elements":120,"controller":"machine","timestamp":"2026-08-17T08:43:08.699Z"}
+{"event":"human_actions","stepId":"step-7","urlChanged":false,"elementsAppeared":0,"elementsDisappeared":0,"newRoles":{},"newHeadings":[],"newDialogs":[],"formFieldsChanged":[],"summary":"no observable change","controller":"machine","timestamp":"2026-08-17T08:43:08.699Z"}
+{"event":"handback","claim":"skip","controller":"machine","timestamp":"2026-08-17T08:43:08.699Z"}
+{"event":"handback_rejected","claim":"skip","reason":"page state unchanged after skip claim","controller":"machine","timestamp":"2026-08-17T08:43:08.700Z"}
+{"event":"control_transfer","to":"human","stepId":"step-7","reason":"Skip rejected — page unchanged. About to click \"Transfer Funds\" — requires human authorization","controller":"machine","timestamp":"2026-08-17T08:43:08.700Z"}
+{"event":"window_before","stepId":"step-7","url":"http://localhost:3000/t/cascade-cu/member?q=60020","elements":120,"headings":[],"controller":"machine","timestamp":"2026-08-17T08:43:08.700Z"}
+{"event":"window_after","stepId":"step-7","url":"http://localhost:3000/t/cascade-cu/member?q=60020","elements":120,"controller":"machine","timestamp":"2026-08-17T08:43:28.749Z"}
+{"event":"human_actions","stepId":"step-7","urlChanged":false,"elementsAppeared":0,"elementsDisappeared":0,"newRoles":{},"newHeadings":[],"newDialogs":[],"formFieldsChanged":[],"summary":"no observable change","controller":"machine","timestamp":"2026-08-17T08:43:28.750Z"}
+{"event":"handback","claim":"approve","controller":"machine","timestamp":"2026-08-17T08:43:28.750Z"}
+{"event":"control_transfer","to":"machine","stepId":"step-7","controller":"machine","timestamp":"2026-08-17T08:43:28.750Z"}
+{"event":"act_result","step":7,"ok":true,"readValue":null,"verb":"click","controller":"machine","timestamp":"2026-08-17T08:43:28.809Z"}
+{"event":"step_ok","step":7,"verb":"click","rungCount":1,"controller":"machine","timestamp":"2026-08-17T08:43:28.843Z"}
+{"event":"dead_end","reason":"Wall clock timeout","stepsCompleted":7,"controller":"machine","timestamp":"2026-08-17T08:43:28.843Z"}
+{"event":"token_summary","promptTokens":40873,"completionTokens":529,"reasoningTokens":159,"totalTokens":41402,"controller":"machine","timestamp":"2026-08-17T08:43:28.844Z"}

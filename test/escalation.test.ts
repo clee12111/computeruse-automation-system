@@ -39,36 +39,25 @@ beforeAll(async () => {
     env: { ...process.env, PORT: String(PORT) }, stdio: 'pipe', cwd: process.cwd(),
   });
   await waitForServer();
-  artifact = loadArtifact(resolve('capabilities/lookup-savings-balance-live.v1.json'));
+  artifact = loadArtifact(resolve('capabilities/lookup-dense-savings.v1.json'));
 }, 30000);
 
 afterAll(() => { server?.kill(); });
 
 describe('Escalation', { timeout: 90000 }, () => {
 
-  it('RETRY-HEALS: 77777 compliance interstitial → hook acknowledges → retry → SUCCESS', async () => {
-    // Member 77777 has alert "Under review for recent address change"
-    // The compliance interstitial will intercept the search result
-    // The hook simulates a human acknowledging the compliance notice
+  it('RETRY-HEALS: 77777 compliance interstitial → breakage → HARD_FAILURE (Phase 22: breakage never escalates)', async () => {
+    // Phase 22 semantics: the compliance interstitial causes a condition handler
+    // exhaustion or arbitration timeout, both classified as breakage.
+    // Breakage → HARD_FAILURE immediately, no channel consultation.
+    // The compliance interstitial is a UI problem the tool must handle via
+    // its onCondition handlers, not via human intervention at runtime.
     const surface = new BrowserSurface({ baseUrl: BASE, tenantPrefix: PREFIX, policy, headed: false });
     const journal = new RunJournal(resolve('evidence/runs'), artifact, { memberId: '77777', ...CREDS });
     (surface as any).config.screenshotDir = journal.runDir;
     await surface.launch();
 
-    const channel = new ScriptedChannel([{ kind: 'retry' }], {
-      beforeClaim: async () => {
-        // Simulate human acknowledging compliance: check the box and click Continue
-        const page = (surface as any).page;
-        try {
-          const ack = page.locator('input[name="ack"]');
-          if (await ack.count() > 0) {
-            await ack.check();
-            await page.click('button[type="submit"]');
-            await page.waitForLoadState('load', { timeout: 5000 });
-          }
-        } catch { /* page may have changed */ }
-      },
-    });
+    const channel = new ScriptedChannel([{ kind: 'retry' }]);
 
     try {
       const result = await replay({
@@ -77,30 +66,21 @@ describe('Escalation', { timeout: 90000 }, () => {
         attended: true, channel,
       });
 
-      const journalContent = readFileSync(resolve(journal.runDir, 'journal.jsonl'), 'utf8');
-      expect(journalContent).toContain('control_transfer');
-      expect(journalContent).toContain('"claim":"retry"');
-
-      // After retry, the compliance is acknowledged; the run should proceed
-      // If SUCCESS: the flagship narrative works
-      // If HARD_FAILURE: the compliance wasn't fully resolved or the step still can't resolve
-      if (result.status === 'SUCCESS') {
-        expect(result.outputs.savingsBalance).toBeDefined();
-      }
-      // Any outcome proves the escalation→retry arc; SUCCESS is the ideal
-      // ESCALATED can occur if the retry re-fails and the scripted claims exhaust
-      expect(['SUCCESS', 'HARD_FAILURE', 'ESCALATED']).toContain(result.status);
+      // Breakage → HARD_FAILURE, channel never consulted
+      expect(result.status).toBe('HARD_FAILURE');
     } finally {
       await surface.close();
     }
   });
 
 
-  it('R7-attended: skip rejected → abort → ESCALATED with correct stepId', async () => {
-    // Replay vs member 23456 (ambiguous Savings) with attended mode
-    // Scripted claims: [skip] → rejected (output not populated) → [abort]
+  it('R7-attended: breakage → HARD_FAILURE (breakage never escalates in replay)', async () => {
+    // Replay vs member 23456 (ambiguous Savings) with attended mode.
+    // Phase 22 semantics: breakage (ambiguous target) returns HARD_FAILURE
+    // immediately — no channel consultation. The tool is broken; rediscovery
+    // is the fix, not human intervention at the keyboard.
     const channel = new ScriptedChannel([
-      { kind: 'skip' },   // will be REJECTED — expect can't pass
+      { kind: 'skip' },
       { kind: 'abort', notes: 'Cannot resolve ambiguity' },
     ]);
 
@@ -115,27 +95,16 @@ describe('Escalation', { timeout: 90000 }, () => {
         attended: true, channel,
       });
 
-      expect(result.status).toBe('ESCALATED');
-      if (result.status === 'ESCALATED') {
-        expect(result.notes).toContain('ambiguity');
-      }
+      // Breakage → HARD_FAILURE, channel never consulted
+      expect(result.status).toBe('HARD_FAILURE');
 
-      // Check journal for controller transitions
+      // No escalation events in journal — breakage skips the channel
       const journalContent = readFileSync(resolve(journal.runDir, 'journal.jsonl'), 'utf8');
-      expect(journalContent).toContain('control_transfer');
-      expect(journalContent).toContain('"to":"human"');
-      expect(journalContent).toContain('handback_rejected');
-      expect(journalContent).toContain('"claim":"abort"');
-      expect(journalContent).toContain('"to":"machine"');
+      expect(journalContent).not.toContain('control_transfer');
 
-      // Intervention JSON should exist
+      // No intervention JSON — breakage returns immediately
       const interventionFiles = require('fs').readdirSync(journal.runDir).filter((f: string) => f.startsWith('intervention-'));
-      expect(interventionFiles.length).toBeGreaterThan(0);
-
-      // Check the intervention has the right step
-      const interventionJson = JSON.parse(readFileSync(resolve(journal.runDir, interventionFiles[0]), 'utf8'));
-      // May fail at s7 (compliance interstitial) or s8 (ambiguity)
-      expect(['s7', 's8']).toContain(interventionJson.stepId);
+      expect(interventionFiles.length).toBe(0);
     } finally {
       await surface.close();
     }
@@ -147,7 +116,7 @@ describe('Escalation', { timeout: 90000 }, () => {
     mod.steps[4] = {
       ...mod.steps[4],
       action: { verb: 'navigate', value: '/search?fault=app_error' },
-      target: { chain: [{ by: 'structural', note: 'navigation target' }], reasoning: 'Error-injected' },
+      target: { properties: { role: 'navigation', frame: 'main', name: 'search' }, reasoning: 'Error-injected' },
       expect: { textPresent: 'Member Number' },
     };
 
@@ -198,15 +167,12 @@ describe('Escalation', { timeout: 90000 }, () => {
         attended: true, channel,
       });
 
-      // After retry + second failure + abort → ESCALATED
-      expect(result.status).toBe('ESCALATED');
+      // Phase 22: breakage (app_error) → HARD_FAILURE immediately, no channel
+      expect(result.status).toBe('HARD_FAILURE');
 
       const journalContent = readFileSync(resolve(journal.runDir, 'journal.jsonl'), 'utf8');
-      // The escalate→retry→(re-fail)→abort arc should be visible
-      expect(journalContent).toContain('"claim":"retry"');
-      expect(journalContent).toContain('"to":"human"');
-      expect(journalContent).toContain('"to":"machine"');
-      expect(journalContent).toContain('"claim":"abort"');
+      // Phase 22: breakage → HARD_FAILURE, no escalation events
+      expect(journalContent).not.toContain('control_transfer');
     } finally {
       await surface.close();
     }
@@ -241,9 +207,9 @@ describe('Escalation', { timeout: 90000 }, () => {
           inHumanWindow = false;
           continue;
         }
-        // During human window, only handback/handback_rejected events should appear
+        // During human window: handback events + window capture events only
         if (inHumanWindow) {
-          expect(['handback', 'handback_rejected']).toContain(ev.event);
+          expect(['handback', 'handback_rejected', 'window_before', 'window_after', 'human_actions']).toContain(ev.event);
         }
       }
     } finally {

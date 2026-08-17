@@ -1,0 +1,8 @@
+{
+  "_note": "Word-boundary matched, case-insensitive. A click/select on a target whose accessible name contains any of these triggers the risky-action gate.",
+  "verbs": [
+    "transfer", "submit", "pay", "send", "delete", "remove",
+    "close", "confirm", "authorize", "withdraw", "post",
+    "execute", "open account"
+  ]
+}

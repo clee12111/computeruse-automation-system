@@ -1,0 +1,34 @@
+{"event":"step_start","stepId":"s1","intent":"Navigate to the login page","controller":"machine","timestamp":"2026-08-16T05:35:18.870Z"}
+{"event":"navigate","stepId":"s1","path":"/login","controller":"machine","timestamp":"2026-08-16T05:35:18.881Z"}
+{"event":"expect_passed","stepId":"s1","controller":"machine","timestamp":"2026-08-16T05:35:18.928Z"}
+{"event":"step_start","stepId":"s2","intent":"Enter the ••• username","controller":"machine","timestamp":"2026-08-16T05:35:18.929Z"}
+{"event":"rung_matched","stepId":"s2","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:35:19.010Z"}
+{"event":"scoring_result","stepId":"s2","topScore":8.5,"margin":0.31152204836415365,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:35:19.011Z"}
+{"event":"acted","stepId":"s2","verb":"type","controller":"machine","timestamp":"2026-08-16T05:35:19.020Z"}
+{"event":"expect_passed","stepId":"s2","controller":"machine","timestamp":"2026-08-16T05:35:19.020Z"}
+{"event":"step_start","stepId":"s3","intent":"Enter the ••• password","controller":"machine","timestamp":"2026-08-16T05:35:19.021Z"}
+{"event":"rung_matched","stepId":"s3","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:35:19.077Z"}
+{"event":"scoring_result","stepId":"s3","topScore":8.5,"margin":0.31152204836415365,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:35:19.077Z"}
+{"event":"acted","stepId":"s3","verb":"type","controller":"machine","timestamp":"2026-08-16T05:35:19.083Z"}
+{"event":"expect_passed","stepId":"s3","controller":"machine","timestamp":"2026-08-16T05:35:19.084Z"}
+{"event":"step_start","stepId":"s4","intent":"Click Sign In to authenticate","controller":"machine","timestamp":"2026-08-16T05:35:19.084Z"}
+{"event":"rung_matched","stepId":"s4","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:35:19.133Z"}
+{"event":"scoring_result","stepId":"s4","topScore":7.742720436939566,"margin":0.26935984969909316,"matchedRole":"button","controller":"machine","timestamp":"2026-08-16T05:35:19.134Z"}
+{"event":"acted","stepId":"s4","verb":"click","controller":"machine","timestamp":"2026-08-16T05:35:19.199Z"}
+{"event":"expect_passed","stepId":"s4","controller":"machine","timestamp":"2026-08-16T05:35:19.229Z"}
+{"event":"step_start","stepId":"s5","intent":"Navigate to member search","controller":"machine","timestamp":"2026-08-16T05:35:19.229Z"}
+{"event":"navigate","stepId":"s5","path":"/search","controller":"machine","timestamp":"2026-08-16T05:35:19.229Z"}
+{"event":"expect_passed","stepId":"s5","controller":"machine","timestamp":"2026-08-16T05:35:19.258Z"}
+{"event":"step_start","stepId":"s6","intent":"Enter the member number into the search field","controller":"machine","timestamp":"2026-08-16T05:35:19.258Z"}
+{"event":"rung_matched","stepId":"s6","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:35:19.325Z"}
+{"event":"scoring_result","stepId":"s6","topScore":8.5,"margin":0.30895034195658644,"matchedRole":"textbox","controller":"machine","timestamp":"2026-08-16T05:35:19.325Z"}
+{"event":"acted","stepId":"s6","verb":"type","controller":"machine","timestamp":"2026-08-16T05:35:19.332Z"}
+{"event":"expect_passed","stepId":"s6","controller":"machine","timestamp":"2026-08-16T05:35:19.332Z"}
+{"event":"step_start","stepId":"s7","intent":"Submit the search","controller":"machine","timestamp":"2026-08-16T05:35:19.332Z"}
+{"event":"rung_matched","stepId":"s7","rungIndex":0,"controller":"machine","timestamp":"2026-08-16T05:35:19.390Z"}
+{"event":"scoring_result","stepId":"s7","topScore":7.738577663713623,"margin":0.2620065754580336,"matchedRole":"button","controller":"machine","timestamp":"2026-08-16T05:35:19.390Z"}
+{"event":"acted","stepId":"s7","verb":"click","controller":"machine","timestamp":"2026-08-16T05:35:19.429Z"}
+{"event":"control_transfer","to":"human","stepId":"s7","reason":"Arbitration timeout (15000ms)","controller":"machine","timestamp":"2026-08-16T05:35:34.689Z"}
+{"event":"handback_rejected","claim":"skip","reason":"expect not met on live screen","controller":"machine","timestamp":"2026-08-16T05:35:34.691Z"}
+{"event":"handback","claim":"abort","notes":"Cannot resolve ambiguity","controller":"machine","timestamp":"2026-08-16T05:35:34.691Z"}
+{"event":"control_transfer","to":"machine","stepId":"s7","controller":"machine","timestamp":"2026-08-16T05:35:34.691Z"}

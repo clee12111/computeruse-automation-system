@@ -1,5 +1,6 @@
 // test/transfer.test.ts — Transfer-funds: trust lifecycle, ref output, outcomes, side effects.
 
+import './helpers/trust-sandbox.js';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { type ChildProcess, spawn } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -60,7 +61,7 @@ afterAll(() => { server?.kill(); });
 
 beforeEach(() => { saveTrust({}); });
 
-describe('Transfer Funds v1.2.0', { timeout: 60000 }, () => {
+describe('Transfer Funds v2.0.0', { timeout: 60000 }, () => {
 
   it('risk taxonomy: only Execute Transfer is risky (not password)', () => {
     const risky = artifact.steps.filter(s => s.risk === 'risky');
@@ -89,7 +90,7 @@ describe('Transfer Funds v1.2.0', { timeout: 60000 }, () => {
   });
 
   it('APPROVE → SUCCESS with referenceNumber + side effects', async () => {
-    approveCapability('transfer-funds', '1.2.0');
+    approveCapability('transfer-funds', '2.0.0');
     const { result, journal } = await runReplay({
       memberId: '12345', fromAccount: '12345-S1', toAccount: '12345-C1', amount: '50.00', ...CREDS,
     });
@@ -113,14 +114,14 @@ describe('Transfer Funds v1.2.0', { timeout: 60000 }, () => {
   });
 
   it('version bump resets trust', async () => {
-    approveCapability('transfer-funds', '1.2.0');
+    approveCapability('transfer-funds', '2.0.0');
     const { getTrustStatus } = await import('../src/guardrails/trust.js');
-    expect(getTrustStatus('transfer-funds', '1.2.0').status).toBe('approved');
-    expect(getTrustStatus('transfer-funds', '1.3.0').status).toBe('manual');
+    expect(getTrustStatus('transfer-funds', '2.0.0').status).toBe('approved');
+    expect(getTrustStatus('transfer-funds', '2.1.0').status).toBe('manual');
   });
 
   it('PERMISSION_DENIED: operator on restricted member → BUSINESS_OUTCOME', async () => {
-    approveCapability('transfer-funds', '1.2.0');
+    approveCapability('transfer-funds', '2.0.0');
     // 78901 has compliance interstitial + restriction. The compliance requires
     // checkbox+click (2 actions) which the handler can't do in one step.
     // Use the detection differently: the outcome detect watches for "Insufficient privileges"
@@ -144,7 +145,7 @@ describe('Transfer Funds v1.2.0', { timeout: 60000 }, () => {
   });
 
   it('INSUFFICIENT_FUNDS: amount=999999.99 → BUSINESS_OUTCOME', async () => {
-    approveCapability('transfer-funds', '1.2.0');
+    approveCapability('transfer-funds', '2.0.0');
     const { result } = await runReplay({
       memberId: '12345', fromAccount: '12345-S1', toAccount: '12345-C1', amount: '999999.99', ...CREDS,
     });
@@ -155,7 +156,7 @@ describe('Transfer Funds v1.2.0', { timeout: 60000 }, () => {
   });
 
   it('dual test: happy path still SUCCESS after outcome captures', async () => {
-    approveCapability('transfer-funds', '1.2.0');
+    approveCapability('transfer-funds', '2.0.0');
     const { result } = await runReplay({
       memberId: '12345', fromAccount: '12345-S1', toAccount: '12345-C1', amount: '5.00', ...CREDS,
     });
@@ -166,17 +167,17 @@ describe('Transfer Funds v1.2.0', { timeout: 60000 }, () => {
     // Run a gate-stop (trust=manual)
     await runReplay({ memberId: '12345', fromAccount: '12345-S1', toAccount: '12345-C1', amount: '1.00', ...CREDS });
     // Run an approved SUCCESS
-    approveCapability('transfer-funds', '1.2.0');
+    approveCapability('transfer-funds', '2.0.0');
     await runReplay({ memberId: '12345', fromAccount: '12345-S1', toAccount: '12345-C1', amount: '1.00', ...CREDS });
 
-    const dossier = computeDossier('transfer-funds', '1.2.0');
+    const dossier = computeDossier('transfer-funds', '2.0.0');
     expect(dossier.gateStops).toBeGreaterThanOrEqual(1);
     // Gate stops are NOT counted in runCount
     expect(dossier.runCount).toBeGreaterThanOrEqual(1);
   });
 
   it('redaction: credentials absent from evidence', async () => {
-    approveCapability('transfer-funds', '1.2.0');
+    approveCapability('transfer-funds', '2.0.0');
     const { result, journal } = await runReplay({
       memberId: '12345', fromAccount: '12345-S1', toAccount: '12345-C1', amount: '1.00', ...CREDS,
     });

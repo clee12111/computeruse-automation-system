@@ -12,38 +12,33 @@ export const ValueBindingSchema = z.union([
 ]);
 export type ValueBinding = z.infer<typeof ValueBindingSchema>;
 
-// ── Descriptor chain strategies ─────────────────────────────
-// Discriminated union on "by" — each rung type has its own fields.
-// Geometric must be flagged lastResort (DESIGN_MAP: "recorded but never trusted").
+// ── Property set (v2 — replaces the v1 descriptor chain) ────
+// Recorded at describe() time from the observed element.
+// resolve() scores every candidate against these properties.
+// See ARCHITECTURE_V2.md §3 for design rationale.
 
-export const RoleNameDescriptor = z.object({
-  by: z.literal('roleName'), role: z.string(), name: z.string(),
-});
-export const LabelProximityDescriptor = z.object({
-  by: z.literal('labelProximity'), role: z.string(), anchor: z.string(),
-});
-export const TableCellDescriptor = z.object({
-  by: z.literal('tableCell'), column: z.string(), rowContains: z.string(),
-});
-export const AnchorRelationDescriptor = z.object({
-  by: z.literal('anchorRelation'), relation: z.string(), anchor: z.string(), match: z.string(),
-});
-export const StructuralDescriptor = z.object({
-  by: z.literal('structural'), note: z.string(), near: z.string().optional(),
-});
-export const GeometricDescriptor = z.object({
-  by: z.literal('geometric'), lastResort: z.literal(true),
-}).passthrough(); // allow x, y, width, height etc. — shape not yet locked
+export const PropertySetSchema = z.object({
+  role: z.string(),
+  name: z.string().optional(),
+  attrName: z.string().optional(),
+  neighborText: z.array(z.string()).optional(),
+  columnHeader: z.string().optional(),
+  frame: z.string(),
+  position: z.object({ x: z.number(), y: z.number() }).optional(),
+  size: z.object({ w: z.number(), h: z.number() }).optional(),
+}).refine(data => {
+  // role + frame are always present (required). At least one additional property
+  // recommended for non-navigate steps, but navigate targets legitimately have
+  // only role + frame. Validation: role and frame must be non-empty.
+  return data.role.length > 0 && data.frame.length > 0;
+}, { message: 'PropertySet: role and frame must be non-empty' });
 
-export const DescriptorSchema = z.discriminatedUnion('by', [
-  RoleNameDescriptor,
-  LabelProximityDescriptor,
-  TableCellDescriptor,
-  AnchorRelationDescriptor,
-  StructuralDescriptor,
-  GeometricDescriptor,
-]);
-export type Descriptor = z.infer<typeof DescriptorSchema>;
+export type PropertySet = z.infer<typeof PropertySetSchema>;
+
+// ── Legacy v1 Descriptor type (for type compatibility during migration) ───
+// Not used in v2 artifacts; kept as a type alias for code that still
+// references it (describe/resolve signature). Will be removed after 12.2b.
+export type Descriptor = PropertySet;
 
 // ── Predicates ──────────────────────────────────────────────
 // Recursive union — each predicate is an object with exactly one key.
@@ -115,7 +110,7 @@ export type ConditionHandler = z.infer<typeof ConditionHandlerSchema>;
 
 // ── Target ──────────────────────────────────────────────────
 export const TargetSchema = z.object({
-  chain: z.array(DescriptorSchema).min(1),
+  properties: PropertySetSchema,
   reasoning: z.string(),
 });
 export type Target = z.infer<typeof TargetSchema>;
@@ -144,7 +139,12 @@ export type InputDecl = z.infer<typeof InputDeclSchema>;
 export const OutputDeclSchema = z.object({
   type: z.enum(['money', 'string', 'date', 'enum']),
   sensitive: z.boolean(),
-});
+  pattern: z.string().optional(),
+}).refine(data => {
+  // String outputs MUST have a pattern — prevents "read a blob and call it done"
+  if (data.type === 'string' && !data.pattern) return false;
+  return true;
+}, { message: 'String outputs must have a pattern to prevent unverified blob reads' });
 export type OutputDecl = z.infer<typeof OutputDeclSchema>;
 
 export const BusinessOutcomeSchema = z.object({

@@ -1,6 +1,6 @@
 {
   "name": "lookup-member-savings-balance",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "app": { "id": "vendor-console", "startPath": "/search" },
 
   "inputs": {
@@ -21,11 +21,13 @@
       "intent": "Enter the member number into the search field",
       "action": { "verb": "type", "value": { "$input": "memberId" } },
       "target": {
-        "chain": [
-          { "by": "labelProximity", "role": "textbox", "anchor": "Member Number" },
-          { "by": "structural", "note": "only textbox in the search form" }
-        ],
-        "reasoning": "Input is unlabeled in markup; anchored to adjacent text. Anchor text is tenant-configurable, so a structural fallback covers label drift."
+        "properties": {
+          "role": "textbox",
+          "frame": "main",
+          "name": "Member Number",
+          "neighborText": ["Member Number"]
+        },
+        "reasoning": "Input is unlabeled in markup; anchored to adjacent text. Anchor text is tenant-configurable."
       },
       "risk": "safe",
       "expect": { "elementValue": { "$self": true } }
@@ -35,7 +37,11 @@
       "intent": "Submit the search",
       "action": { "verb": "click" },
       "target": {
-        "chain": [ { "by": "roleName", "role": "button", "name": "Search" } ],
+        "properties": {
+          "role": "button",
+          "frame": "main",
+          "name": "Search"
+        },
         "reasoning": "Uniquely named button; most stable locator available."
       },
       "risk": "safe",
@@ -58,10 +64,12 @@
       "intent": "Read the savings account balance from the accounts table",
       "action": { "verb": "read", "parseAs": "money", "saveTo": "savingsBalance" },
       "target": {
-        "chain": [
-          { "by": "tableCell", "column": "Balance", "rowContains": "Savings" },
-          { "by": "anchorRelation", "relation": "right-of", "anchor": "Savings", "match": "currency" }
-        ],
+        "properties": {
+          "role": "cell",
+          "frame": "iframe-0",
+          "name": "$4,320.10",
+          "columnHeader": "Balance"
+        },
         "reasoning": "Anchored to headers/labels, not position — members have varying account counts and row order."
       },
       "risk": "safe",

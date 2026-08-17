@@ -1,0 +1,70 @@
+{
+  "SESSION_EXPIRED": {
+    "detect": { "textPresent": "Your session has expired" },
+    "recovery": [
+      {
+        "id": "r1",
+        "intent": "Re-enter username after session expiry",
+        "action": { "verb": "type", "value": { "$input": "username" } },
+        "target": {
+          "properties": {
+            "role": "textbox",
+            "frame": "main",
+            "attrName": "f1",
+            "neighborText": ["Username"]
+          },
+          "reasoning": "Login form username field — same as normal login"
+        },
+        "risk": "safe",
+        "expect": { "elementValue": { "$self": true } }
+      },
+      {
+        "id": "r2",
+        "intent": "Re-enter password after session expiry",
+        "action": { "verb": "type", "value": { "$input": "password" } },
+        "target": {
+          "properties": {
+            "role": "textbox",
+            "frame": "main",
+            "attrName": "f2",
+            "neighborText": ["Password"]
+          },
+          "reasoning": "Login form password field — same as normal login"
+        },
+        "risk": "safe",
+        "expect": { "elementValue": { "$self": true } }
+      },
+      {
+        "id": "r3",
+        "intent": "Submit login to recover from session expiry",
+        "action": { "verb": "click" },
+        "target": {
+          "properties": {
+            "role": "button",
+            "frame": "main",
+            "name": "Sign In"
+          },
+          "reasoning": "Login form submit button"
+        },
+        "risk": "safe",
+        "expect": { "textPresent": "Dashboard" }
+      },
+      {
+        "id": "r4",
+        "intent": "Navigate back to search page after re-login",
+        "action": { "verb": "navigate", "value": "/search" },
+        "target": {
+          "properties": {
+            "role": "navigation",
+            "frame": "main"
+          },
+          "reasoning": "Navigate to search page — restores the page context"
+        },
+        "risk": "safe",
+        "expect": { "textPresent": "Member Search" }
+      }
+    ],
+    "resume": "retry_current_step",
+    "maxRecoveries": 1
+  }
+}

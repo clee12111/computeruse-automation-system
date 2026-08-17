@@ -167,29 +167,39 @@
           "target": {
             "type": "object",
             "required": [
-              "chain",
+              "properties",
               "reasoning"
             ],
             "properties": {
-              "chain": {
-                "type": "array",
-                "minItems": 1,
-                "items": {
-                  "type": "object",
-                  "required": [
-                    "by"
-                  ],
-                  "properties": {
-                    "by": {
-                      "type": "string",
-                      "enum": [
-                        "roleName",
-                        "labelProximity",
-                        "tableCell",
-                        "anchorRelation",
-                        "structural",
-                        "geometric"
-                      ]
+              "properties": {
+                "type": "object",
+                "required": [
+                  "role",
+                  "frame"
+                ],
+                "properties": {
+                  "role": { "type": "string" },
+                  "frame": { "type": "string" },
+                  "name": { "type": "string" },
+                  "neighborText": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "columnHeader": { "type": "string" },
+                  "position": {
+                    "type": "object",
+                    "required": ["x", "y"],
+                    "properties": {
+                      "x": { "type": "number" },
+                      "y": { "type": "number" }
+                    }
+                  },
+                  "size": {
+                    "type": "object",
+                    "required": ["w", "h"],
+                    "properties": {
+                      "w": { "type": "number" },
+                      "h": { "type": "number" }
                     }
                   }
                 }

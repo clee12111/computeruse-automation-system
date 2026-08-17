@@ -1,0 +1,236 @@
+{
+  "type": "replay_failure",
+  "header": {
+    "capability": "lookup-dense-savings",
+    "version": "1.1.0",
+    "app": "vendor-console",
+    "timestamp": "2026-08-16T05:36:50.351Z",
+    "durationMs": 1095
+  },
+  "contract": {
+    "inputs": {
+      "memberId": {
+        "type": "string",
+        "pattern": "^[0-9]{5}$",
+        "sensitive": false
+      },
+      "username": {
+        "type": "string",
+        "sensitive": true
+      },
+      "password": {
+        "type": "string",
+        "sensitive": true
+      }
+    },
+    "outputs": {
+      "savingsBalance": {
+        "type": "money",
+        "sensitive": true
+      }
+    },
+    "businessOutcomes": [
+      "MEMBER_NOT_FOUND"
+    ]
+  },
+  "steps": [
+    {
+      "number": 1,
+      "id": "s1",
+      "intent": "Navigate to login",
+      "action": "Navigate to `/search`",
+      "target": "navigation in main frame",
+      "identification": "Identified by role \"navigation\" and position only. Fragile: no semantic identifier — fragile.",
+      "proof": "the page must show the text 'Sign In'",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-16T05:36:50.351Z"
+    },
+    {
+      "number": 2,
+      "id": "s2",
+      "intent": "Enter username",
+      "action": "Type {username} into \"Username\"",
+      "target": "textbox (HTML name: f1) near text [Username] in main frame",
+      "identification": "Identified by HTML name \"f1\" + neighbor text [Username]. Robust: HTML name attr (stable across reflows); neighbor text context. Fragile: position (breaks on layout change).",
+      "proof": "the field must contain the typed value",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.31152204836415365,
+      "timing": "2026-08-16T05:36:50.399Z"
+    },
+    {
+      "number": 3,
+      "id": "s3",
+      "intent": "Enter password",
+      "action": "Type {password} into \"Password\"",
+      "target": "textbox (HTML name: f2) near text [Password] in main frame",
+      "identification": "Identified by HTML name \"f2\" + neighbor text [Password]. Robust: HTML name attr (stable across reflows); neighbor text context. Fragile: position (breaks on layout change).",
+      "proof": "the field must contain the typed value",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.31152204836415365,
+      "timing": "2026-08-16T05:36:50.481Z"
+    },
+    {
+      "number": 4,
+      "id": "s4",
+      "intent": "Click Sign In",
+      "action": "Click \"Sign In\"",
+      "target": "button named \"Sign In\" in main frame",
+      "identification": "Identified by accessible name \"Sign In\". Robust: accessible name (survives layout changes). Fragile: position (breaks on layout change).",
+      "proof": "the page must show the text 'Dashboard'",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.26935984969909316,
+      "timing": "2026-08-16T05:36:50.549Z"
+    },
+    {
+      "number": 5,
+      "id": "s5",
+      "intent": "Navigate to member search",
+      "action": "Click \"Member Search\"",
+      "target": "link named \"Member Search\" in main frame",
+      "identification": "Identified by accessible name \"Member Search\". Robust: accessible name (survives layout changes). Fragile: position (breaks on layout change).",
+      "proof": "the page must show the text 'Member Search'",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-16T05:36:50.711Z"
+    },
+    {
+      "number": 6,
+      "id": "s6",
+      "intent": "Enter member number",
+      "action": "Type {memberId} into \"Member\"",
+      "target": "textbox (HTML name: f1) near text [Member, Number] in main frame",
+      "identification": "Identified by HTML name \"f1\" + neighbor text [Member, Number]. Robust: HTML name attr (stable across reflows); neighbor text context. Fragile: position (breaks on layout change).",
+      "proof": "the field must contain the typed value",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.30895034195658644,
+      "timing": "2026-08-16T05:36:50.735Z"
+    },
+    {
+      "number": 7,
+      "id": "s7",
+      "intent": "Submit search",
+      "action": "Click \"Member Search\"",
+      "target": "button named \"Member Search\" in main frame",
+      "identification": "Identified by accessible name \"Member Search\". Robust: accessible name (survives layout changes). Fragile: position (breaks on layout change).",
+      "proof": "business outcome: MEMBER_NOT_FOUND OR the page must show the text 'Member Details'",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.2620065754580336,
+      "timing": "2026-08-16T05:36:50.810Z"
+    },
+    {
+      "number": 8,
+      "id": "s8",
+      "intent": "Click Transfer Funds link",
+      "action": "Read the value in the \"Balance\" column and save as `savingsBalance`",
+      "target": "cell named \"$10,426.23\" in column \"Balance\" near text [00] in accounts frame",
+      "identification": "Identified by accessible name \"$10,426.23\" + column header \"Balance\" + neighbor text [00]. Robust: accessible name (survives layout changes); column header (structural); neighbor text context; scoped to frame \"accounts\". Fragile: position (breaks on layout change).",
+      "proof": "output `savingsBalance` must have a value",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.0601503759398496,
+      "timing": "2026-08-16T05:36:50.950Z",
+      "issues": [
+        "Low margin: 0.060 — close call, will break first if site changes"
+      ]
+    },
+    {
+      "number": 9,
+      "id": "s9",
+      "intent": "Select from-account",
+      "action": "(unknown)",
+      "target": "(unknown)",
+      "identification": "(no target data)",
+      "proof": "(unknown)",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.07017543859649127,
+      "timing": "2026-08-16T05:36:51.129Z",
+      "issues": [
+        "Low margin: 0.070 — close call, will break first if site changes"
+      ]
+    },
+    {
+      "number": 10,
+      "id": "s10",
+      "intent": "Select to-account",
+      "action": "(unknown)",
+      "target": "(unknown)",
+      "identification": "(no target data)",
+      "proof": "(unknown)",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.07017543859649127,
+      "timing": "2026-08-16T05:36:51.208Z",
+      "issues": [
+        "Low margin: 0.070 — close call, will break first if site changes"
+      ]
+    },
+    {
+      "number": 11,
+      "id": "s11",
+      "intent": "Enter transfer amount",
+      "action": "(unknown)",
+      "target": "(unknown)",
+      "identification": "(no target data)",
+      "proof": "(unknown)",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.10526315789473684,
+      "timing": "2026-08-16T05:36:51.261Z",
+      "issues": [
+        "Low margin: 0.105 — close call, will break first if site changes"
+      ]
+    },
+    {
+      "number": 12,
+      "id": "s12",
+      "intent": "Submit for review",
+      "action": "(unknown)",
+      "target": "(unknown)",
+      "identification": "(no target data)",
+      "proof": "(unknown)",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.10526315789473684,
+      "timing": "2026-08-16T05:36:51.315Z",
+      "issues": [
+        "Low margin: 0.105 — close call, will break first if site changes"
+      ]
+    },
+    {
+      "number": 13,
+      "id": "s13",
+      "intent": "Execute the transfer",
+      "action": "(unknown)",
+      "target": "(unknown)",
+      "identification": "(no target data)",
+      "proof": "(unknown)",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-16T05:36:51.446Z"
+    }
+  ],
+  "warnings": [],
+  "provenance": {
+    "humanAssisted": false,
+    "humanActions": []
+  },
+  "driftSignals": [
+    "Step \"s8\" (Read the savings account balance from the accounts table for member <memberId>.): margin 0.060 — will break first if the site changes.",
+    "Step \"s9\": margin 0.070 — will break first if the site changes.",
+    "Step \"s10\": margin 0.070 — will break first if the site changes.",
+    "Step \"s11\": margin 0.105 — will break first if the site changes.",
+    "Step \"s12\": margin 0.105 — will break first if the site changes."
+  ],
+  "nextActions": [
+    "Review the failure point and candidate table above.",
+    "Re-discover: `npm run cli -- discover --name lookup-dense-savings ...`",
+    "Check if the target site has changed layout since discovery."
+  ]
+}

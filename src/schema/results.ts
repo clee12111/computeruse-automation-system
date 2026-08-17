@@ -38,6 +38,13 @@ export const ReplayResultSchema = z.discriminatedUnion('status', [
 ]);
 export type ReplayResult = z.infer<typeof ReplayResultSchema>;
 
+// ── Human-readable envelope (derived from typed fields, never authored) ──
+export interface DescribedResult {
+  summary: string;       // one sentence, plain language
+  detail?: string;       // what happened and where
+  nextActions: string[]; // concrete, ordered, most useful first
+}
+
 // ── Controller state ────────────────────────────────────────
 // Tracks who is currently driving the session (DESIGN_MAP D8).
 export const ControllerStateSchema = z.enum(['machine', 'human']);
@@ -45,6 +52,15 @@ export type ControllerState = z.infer<typeof ControllerStateSchema>;
 
 // ── Intervention request ────────────────────────────────────
 // Emitted when the engine needs a human to take over.
+export const InterventionElementSchema = z.object({
+  n: z.number(),
+  role: z.string(),
+  name: z.string(),
+  attrName: z.string().optional(),
+  frame: z.string(),
+  risky: z.boolean().optional(),
+});
+
 export const InterventionRequestSchema = z.object({
   capability: z.string(),
   version: z.string(),
@@ -54,6 +70,10 @@ export const InterventionRequestSchema = z.object({
   observed: z.string(),
   screenshotRef: z.string(),
   reason: z.string(),
-  options: z.array(z.enum(['retry', 'skip', 'abort'])),
+  options: z.array(z.enum(['retry', 'skip', 'abort', 'approve'])),
+  // Live page state for text-based operator surface
+  url: z.string().optional(),
+  pageText: z.string().optional(),
+  elements: z.array(InterventionElementSchema).optional(),
 });
 export type InterventionRequest = z.infer<typeof InterventionRequestSchema>;

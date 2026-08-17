@@ -1,0 +1,39 @@
+{
+  "surfaces": {
+    "vendor-console": {
+      "baseUrl": "http://localhost:3000",
+      "tenant": "cascade-cu",
+      "startPath": "/search",
+      "label": "Cascade Credit Union",
+      "description": "Legacy credit union operator console"
+    },
+    "vendor-console-harborview": {
+      "baseUrl": "http://localhost:3000",
+      "tenant": "harborview",
+      "startPath": "/search",
+      "label": "Harborview Community Bank",
+      "description": "Community bank console (same platform, different vocabulary)"
+    },
+    "parabank": {
+      "baseUrl": "https://parabank.parasoft.com",
+      "tenant": "",
+      "startPath": "/login.htm",
+      "label": "ParaBank",
+      "description": "Third-party public banking demo",
+      "credentials": { "username": "PARABANK_USER", "password": "PARABANK_PASS" }
+    },
+    "altoro": {
+      "baseUrl": "http://demo.testfire.net",
+      "tenant": "",
+      "startPath": "/login.jsp",
+      "label": "Altoro Mutual",
+      "description": "Hostile legacy online banking (framesets, no semantic markup)",
+      "credentials": { "username": "ALTORO_USER", "password": "ALTORO_PASS" }
+    }
+  },
+  "credentials": {
+    "_note": "Sensitive values from env vars. Keys here match input names in artifacts.",
+    "username": "CONSOLE_USER",
+    "password": "CONSOLE_PASS"
+  }
+}

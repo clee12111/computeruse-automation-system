@@ -46,10 +46,10 @@ export async function runReplay(args: string[]): Promise<void> {
   for (const name of Object.keys(artifact.inputs)) {
     if (flags.has(name)) {
       inputs[name] = flags.get(name)!;
-    } else if (name === 'username') {
-      inputs[name] = process.env.CONSOLE_USER || 'operator';
-    } else if (name === 'password') {
-      inputs[name] = process.env.CONSOLE_PASS || 'demo123';
+    } else if (name === 'username' && process.env.CONSOLE_USER) {
+      inputs[name] = process.env.CONSOLE_USER;
+    } else if (name === 'password' && process.env.CONSOLE_PASS) {
+      inputs[name] = process.env.CONSOLE_PASS;
     }
   }
 
@@ -93,7 +93,7 @@ export async function runReplay(args: string[]): Promise<void> {
       channel = new TerminalChannel();
     }
 
-    const result = await replay({ surface, artifact, inputs, journal, stepTimeoutMs: 30000, tickMs: 250, attended, channel });
+    const result = await replay({ surface, artifact, inputs, journal, stepTimeoutMs: 30000, tickMs: 250, attended, channel, tenant });
 
     // Add sensitive output values to redactor before writing result
     if (result.status === 'SUCCESS') {
@@ -105,12 +105,22 @@ export async function runReplay(args: string[]): Promise<void> {
     }
 
     journal.writeResult(result);
-    console.log(JSON.stringify(result, null, 2));
+    // Human-readable output
+    const jsonMode = args.includes('--json');
+    if (jsonMode) {
+      // report.json for machines
+      const { readFileSync: rf } = await import('node:fs');
+      const { resolve: rp, join: jp } = await import('node:path');
+      console.log(rf(jp(journal.runDir, 'report.json'), 'utf8'));
+    } else {
+      // report.md for humans
+      const { readFileSync: rf } = await import('node:fs');
+      const { join: jp } = await import('node:path');
+      console.log(rf(jp(journal.runDir, 'report.md'), 'utf8'));
+    }
 
     if (result.status === 'SUCCESS' || result.status === 'BUSINESS_OUTCOME') {
       process.exit(0);
-    } else if (result.status === 'HARD_FAILURE') {
-      process.exit(3);
     } else {
       process.exit(3);
     }

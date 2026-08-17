@@ -1,0 +1,22 @@
+=== MCP Raw Client (no SDK) ===
+
+(node:42968) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+1. INITIALIZE
+   Server: computeruse-automation v2.0.0
+   Protocol: 2024-11-05
+
+2. TOOLS/LIST
+   3 tools available:
+   - lookup-dense-savings: lookup-dense-savings: reads savingsBalance (money) from vendor-console. Possible
+   - discover_capability: Start learning a new capability on a target site. Returns immediately with a run
+   - check_discovery: Check the progress of a running discovery. Returns status, steps so far, and — o
+
+3. TOOLS/CALL → lookup-dense-savings
+   Result: SUCCESS
+   Outputs: {"savingsBalance":10426.23}
+   Summary: lookup-dense-savings completed successfully — savingsBalance: $10,426.23.
+   Duration: 862ms
+   Report: C:\Users\ppeng\Desktop\Interface\computeruse-automation-system\evidence\runs\2026-08-17T02-22-40-597Z-lookup-dense-savings\report.md
+
+=== PASS: All steps completed ===

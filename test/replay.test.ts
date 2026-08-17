@@ -61,7 +61,7 @@ beforeAll(async () => {
     stdio: 'pipe', cwd: process.cwd(),
   });
   await waitForServer();
-  artifact = loadArtifact(resolve('capabilities/lookup-member-savings-balance.v1.json'));
+  artifact = loadArtifact(resolve('capabilities/lookup-dense-savings.v1.json'));
 }, 30000);
 
 afterAll(() => { server?.kill(); });
@@ -87,6 +87,13 @@ describe('ReplayEngine', { timeout: 60000 }, () => {
     // Check rung logging
     const rungLines = lines.filter(l => l.includes('rung_matched'));
     expect(rungLines.length).toBeGreaterThan(0);
+
+    // Report files must exist after every replay
+    expect(existsSync(resolve(journal.runDir, 'report.json'))).toBe(true);
+    expect(existsSync(resolve(journal.runDir, 'report.md'))).toBe(true);
+    const reportMd = readFileSync(resolve(journal.runDir, 'report.md'), 'utf8');
+    expect(reportMd).toContain('Replay Report');
+    expect(reportMd).toContain('Step Timeline');
   });
 
   it('Row 2: memberId 99999 → BUSINESS_OUTCOME MEMBER_NOT_FOUND', async () => {
@@ -117,9 +124,7 @@ describe('ReplayEngine', { timeout: 60000 }, () => {
     // Create a broken artifact with an impossible chain
     const brokenArtifact = JSON.parse(JSON.stringify(artifact)) as CapabilityArtifact;
     // Corrupt step s4's target to something that won't resolve
-    brokenArtifact.steps[3].target.chain = [
-      { by: 'roleName', role: 'button', name: 'Totally Nonexistent XYZ Button' },
-    ];
+    brokenArtifact.steps[3].target.properties = { role: 'slider', frame: 'bogus-frame', name: 'Totally Nonexistent XYZ Widget', attrName: 'zzz_no_match', neighborText: ['Nonexistent', 'Context'] };
 
     const { result, journal } = await runReplay({
       memberId: '12345', username: 'operator', password: 'demo123',
@@ -128,7 +133,7 @@ describe('ReplayEngine', { timeout: 60000 }, () => {
     expect(result.status).toBe('HARD_FAILURE');
     if (result.status === 'HARD_FAILURE') {
       expect(result.stepId).toBe('s4');
-      expect(result.observed).toContain('not found');
+      expect(result.observed).toContain('not resolved');
       expect(result.evidenceRefs.length).toBeGreaterThanOrEqual(0);
     }
 

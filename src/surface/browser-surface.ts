@@ -6,12 +6,13 @@
 import { chromium, type Browser, type BrowserContext, type Page, type Frame, type Locator } from 'playwright';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Descriptor, Predicate } from '../schema/artifact.js';
+import type { Descriptor, Predicate, PropertySet } from '../schema/artifact.js';
 import type {
   Surface, SurfaceConfig, Observation, ElementInfo,
   ResolveResult, RungReport, ActResult, PolicyViolation,
 } from './surface.js';
 import { checkPolicy } from '../guardrails/policy.js';
+import { resolveByScoring } from './scoring.js';
 
 // ── Helpers ─────────────────────────────────────────────────
 
@@ -48,11 +49,16 @@ export class BrowserSurface implements Surface {
   private elementMap = new Map<string, { frame: string; locatorDesc: string }>();
   private resolvedLocators = new Map<string, Locator>();
   private lastObservation: Observation | null = null;
+  private lastScoringResult: { topScore: number; margin: number; matchedRole?: string; candidates?: any[] } | null = null;
   private refCounter = 0;
   private ssCounter = 0;
 
   constructor(config: SurfaceConfig) {
     this.config = config;
+  }
+
+  getBaseUrl(): string {
+    return this.config.baseUrl;
   }
 
   async launch(): Promise<void> {
@@ -99,71 +105,149 @@ export class BrowserSurface implements Surface {
 
     for (const frame of this.allFrames()) {
       const fname = this.frameName(frame);
+      const furl = frame.url();
       try {
-        const items = await frame.evaluate(() => {
-          const interactiveSelectors = 'a, button, input, select, textarea, [role], td, th';
-          const els = Array.from(document.querySelectorAll(interactiveSelectors));
-          return els.map(el => {
-            const tag = el.tagName.toLowerCase();
-            const type = el.getAttribute('type') || '';
-            const ariaRole = el.getAttribute('role') || '';
-            const ariaLabel = el.getAttribute('aria-label') || '';
-            const text = (el.textContent || '').trim().substring(0, 100);
-            const rect = el.getBoundingClientRect();
-            // Find nearest label-like text (parent's text minus our own text)
-            let nearbyText = '';
-            let columnHeader = '';
-            const row = el.closest('tr');
+        // Use evaluateHandle + JSON to avoid tsx __name transform breaking in-browser code
+        const handle = await frame.evaluateHandle(`(() => {
+          function computeAccessibleName(el) {
+            var labelledBy = el.getAttribute('aria-labelledby');
+            if (labelledBy) {
+              var parts = labelledBy.split(/\\s+/).map(function(id) {
+                var ref = document.getElementById(id);
+                return ref ? (ref.textContent || '').trim() : '';
+              }).filter(Boolean);
+              if (parts.length > 0) return parts.join(' ');
+            }
+            var ariaLabel = el.getAttribute('aria-label');
+            if (ariaLabel && ariaLabel.trim()) return ariaLabel.trim();
+            var tag = el.tagName.toLowerCase();
+            if (tag === 'input' || tag === 'select' || tag === 'textarea') {
+              var id = el.getAttribute('id');
+              if (id) {
+                var label = document.querySelector('label[for="' + id + '"]');
+                if (label) return (label.textContent || '').trim();
+              }
+              var ancestorLabel = el.closest('label');
+              if (ancestorLabel) {
+                var clone = ancestorLabel.cloneNode(true);
+                var selfInClone = clone.querySelector(tag);
+                if (selfInClone) selfInClone.remove();
+                var labelText = (clone.textContent || '').trim();
+                if (labelText) return labelText;
+              }
+            }
+            var type = el.getAttribute('type') || '';
+            if (tag === 'input' && ['submit', 'button', 'reset'].indexOf(type) >= 0) {
+              var val = el.value;
+              if (val && val.trim()) return val.trim();
+              if (type === 'submit') return 'Submit';
+              if (type === 'reset') return 'Reset';
+            }
+            if (tag === 'img') {
+              var alt = el.getAttribute('alt');
+              if (alt != null) return alt.trim();
+            }
+            if (tag === 'button') {
+              var text = (el.textContent || '').trim();
+              if (text) return text;
+            }
+            var title = el.getAttribute('title');
+            if (title && title.trim()) return title.trim();
+            if (tag === 'input' || tag === 'textarea') {
+              var ph = el.getAttribute('placeholder');
+              if (ph && ph.trim()) return ph.trim();
+            }
+            return (el.textContent || '').trim();
+          }
+          function normalizeHeader(raw) {
+            return raw.replace(/\\s+/g, ' ').replace(/[*†‡]+$/, '').trim();
+          }
+          var interactiveSelectors = 'a, button, input, select, textarea, [role], td, th';
+          var els = Array.from(document.querySelectorAll(interactiveSelectors));
+          return JSON.stringify(els.map(function(el) {
+            var tag = el.tagName.toLowerCase();
+            var type = el.getAttribute('type') || '';
+            var ariaRole = el.getAttribute('role') || '';
+            var accName = computeAccessibleName(el);
+            var rect = el.getBoundingClientRect();
+            var nearbyText = '';
+            var columnHeader = '';
+            var row = el.closest('tr');
             if (row) {
-              const cells = Array.from(row.querySelectorAll('td, th'));
-              const myCell = el.closest('td, th');
-              const myIdx = cells.indexOf(myCell as HTMLElement);
-              for (const c of cells) {
-                if (c !== myCell && c.textContent?.trim()) {
-                  nearbyText = c.textContent.trim().substring(0, 80);
+              var cells = Array.from(row.querySelectorAll('td, th'));
+              var myCell = el.closest('td, th');
+              var myIdx = cells.indexOf(myCell);
+              for (var ci = 0; ci < cells.length; ci++) {
+                if (cells[ci] !== myCell && cells[ci].textContent && cells[ci].textContent.trim()) {
+                  nearbyText = cells[ci].textContent.trim().substring(0, 80);
                   break;
                 }
               }
-              // Find column header for this cell
               if (myIdx >= 0 && (tag === 'td' || tag === 'th')) {
-                const table = el.closest('table');
+                var table = el.closest('table');
                 if (table) {
-                  const headerRow = table.querySelector('tr');
+                  var headerRow = table.querySelector('tr');
                   if (headerRow && headerRow !== row) {
-                    const headers = Array.from(headerRow.querySelectorAll('th, td'));
+                    var headers = Array.from(headerRow.querySelectorAll('th, td'));
                     if (headers[myIdx]) {
-                      columnHeader = headers[myIdx].textContent?.trim()?.substring(0, 30) || '';
+                      var rawH = headers[myIdx].textContent ? headers[myIdx].textContent.trim() : '';
+                      columnHeader = normalizeHeader(rawH).substring(0, 30);
                     }
                   }
                 }
               }
             }
+            var options;
+            if (tag === 'select') {
+              options = Array.from(el.options).map(function(o) { return o.text.trim() || o.value; });
+            }
+            var htmlName = el.getAttribute('name') || '';
+            var htmlId = el.getAttribute('id') || '';
+            var attrName = htmlName || htmlId || '';
             return {
-              tag, type, ariaRole, ariaLabel, text, nearbyText, columnHeader,
-              value: (el as HTMLInputElement).value || '',
+              tag: tag, type: type, ariaRole: ariaRole, accName: accName,
+              nearbyText: nearbyText, columnHeader: columnHeader, attrName: attrName,
+              value: el.value || '', options: options,
               x: rect.x, y: rect.y, width: rect.width, height: rect.height,
             };
-          });
-        });
+          }));
+        })()`);
+        const itemsJson = await handle.jsonValue() as string;
+        await handle.dispose();
+        const items: Array<{
+          tag: string; type: string; ariaRole: string; accName: string;
+          nearbyText: string; columnHeader: string; attrName: string;
+          value: string; options?: string[];
+          x: number; y: number; width: number; height: number;
+        }> = JSON.parse(itemsJson);
 
         for (const item of items) {
           if (item.width === 0 && item.height === 0) continue; // hidden
           const ref = `e${this.refCounter++}`;
           const role = item.ariaRole || implicitRole(item.tag, item.type || undefined);
-          const name = item.ariaLabel || item.text || '';
+          const name = item.accName || '';
           elements.push({
             ref, role, name: name.substring(0, 100),
             nearbyText: item.nearbyText || undefined,
             columnHeader: item.columnHeader || undefined,
             frame: fname,
+            frameUrl: furl !== 'about:blank' ? furl : undefined,
+            attrName: item.attrName || undefined,
             value: item.value || undefined,
+            options: item.options,
             bounds: { x: item.x, y: item.y, width: item.width, height: item.height },
           });
           this.elementMap.set(ref, { frame: fname, locatorDesc: `${role}:${name.substring(0, 50)}` });
         }
-      } catch {
-        // Frame may not be ready — skip
+      } catch (err) {
+        // Frame may not be ready — skip. Log for debugging.
+        if (process.env.DEBUG_OBSERVE) console.error(`observe() frame error (${fname}):`, err);
       }
+    }
+
+    // observe_degraded: warn if all frames failed (0 elements observed)
+    if (elements.length === 0) {
+      console.error('[observe_degraded] WARNING: observe() returned 0 elements — all frame evaluations may have failed');
     }
 
     this.lastObservation = {
@@ -175,322 +259,142 @@ export class BrowserSurface implements Surface {
     return this.lastObservation;
   }
 
-  // ── describe(ref) ─────────────────────────────────────────
+  // ── describe(ref) — v2: emit property set ─────────────────
 
   async describe(ref: string): Promise<Descriptor[]> {
-    // Use cached observation to preserve ref stability; re-observe only if needed
     const obs = this.lastObservation ?? await this.observe();
     const el = obs.elements.find(e => e.ref === ref);
     if (!el) return [];
 
-    const chain: Descriptor[] = [];
+    // Build property set from observed element
+    const props: PropertySet = {
+      role: el.role,
+      frame: el.frame,
+    };
 
-    // Strategy 1: roleName (skip td/th — a cell's accessible name is its DATA, not identity)
-    if (el.name && el.name.length > 1 && el.role && el.role !== 'cell' && el.role !== 'columnheader') {
-      const candidate: Descriptor = { by: 'roleName' as const, role: el.role, name: el.name };
-      const verified = await this.resolve([candidate]);
-      if (verified.kind === 'match') chain.push(candidate);
-    }
-
-    // Strategy 2: labelProximity (if nearby label text exists)
-    if (el.nearbyText && el.role) {
-      const candidate: Descriptor = { by: 'labelProximity' as const, role: el.role, anchor: el.nearbyText };
-      const verified = await this.resolve([candidate]);
-      if (verified.kind === 'match') chain.push(candidate);
-    }
-
-    // Strategy 3: tableCell (if element is inside a table with headers)
-    const tableCellDesc = await this.tryTableCellDescriptor(el);
-    if (tableCellDesc) {
-      const verified = await this.resolve([tableCellDesc]);
-      if (verified.kind === 'match') chain.push(tableCellDesc);
-    }
-
-    // Strategy 4: structural (positional description)
-    const structuralDesc = await this.tryStructuralDescriptor(el, obs);
-    if (structuralDesc) {
-      const verified = await this.resolve([structuralDesc]);
-      if (verified.kind === 'match') chain.push(structuralDesc);
-    }
-
-    // Strategy 5: geometric (always lastResort)
+    if (el.name && el.name.trim().length > 0) props.name = el.name;
+    if (el.attrName) props.attrName = el.attrName;
+    if (el.columnHeader) props.columnHeader = el.columnHeader;
+    if (el.nearbyText) props.neighborText = el.nearbyText.split(/\s+/).filter(Boolean);
     if (el.bounds) {
-      chain.push({
-        by: 'geometric' as const,
-        lastResort: true as const,
+      props.position = {
         x: Math.round(el.bounds.x + el.bounds.width / 2),
         y: Math.round(el.bounds.y + el.bounds.height / 2),
-      } as Descriptor);
+      };
+      props.size = {
+        w: Math.round(el.bounds.width),
+        h: Math.round(el.bounds.height),
+      };
     }
 
-    return chain;
+    // Return as single-element array for interface compat
+    return [props];
   }
 
-  private async tryTableCellDescriptor(el: ElementInfo): Promise<Descriptor | null> {
-    // Only works for elements inside table cells
-    const frame = this.findFrame(el.frame);
-    if (!frame) return null;
-    try {
-      const info = await frame.evaluate((elText) => {
-        // Find cells containing this text
-        const cells = Array.from(document.querySelectorAll('td'));
-        for (const cell of cells) {
-          if (!cell.textContent?.includes(elText)) continue;
-          const row = cell.closest('tr');
-          const table = cell.closest('table');
-          if (!row || !table) continue;
-          // Find column index
-          const allCells = Array.from(row.querySelectorAll('td, th'));
-          const colIndex = allCells.indexOf(cell);
-          if (colIndex < 0) continue;
-          // Find header for this column
-          const headerRow = table.querySelector('tr');
-          if (!headerRow) continue;
-          const headers = Array.from(headerRow.querySelectorAll('th, td'));
-          const header = headers[colIndex]?.textContent?.trim() || '';
-          // Sane header: single line, ≤40 chars; else skip (probably a layout table, not data)
-          if (!header || header.includes('\n') || header.length > 40) continue;
-          // Find row identifier — prefer distinctive text (non-numeric, non-ID-shaped)
-          const rowTexts = allCells.filter((_, i) => i !== colIndex)
-            .map(c => c.textContent?.trim() || '').filter(t => t.length > 0);
-          // Score: prefer non-numeric words like "Savings", "Checking" over IDs like "00", "12345-S1"
-          const scored = rowTexts.map(t => ({ t, score: /^[a-zA-Z]/.test(t) && !/^\d/.test(t) ? 2 : /^[0-9]{1,3}$/.test(t) ? 0 : 1 }));
-          scored.sort((a, b) => b.score - a.score);
-          const rowContains = scored[0]?.t || rowTexts[0] || '';
-          return { column: header, rowContains };
-        }
-        return null;
-      }, el.name || el.value || '');
-      if (info) {
-        return { by: 'tableCell' as const, column: info.column, rowContains: info.rowContains };
-      }
-    } catch { /* ignore */ }
-    return null;
-  }
-
-  private async tryStructuralDescriptor(el: ElementInfo, obs: Observation): Promise<Descriptor | null> {
-    // Count how many elements of the same role exist in the same frame
-    const sameRole = obs.elements.filter(e => e.role === el.role && e.frame === el.frame);
-    if (sameRole.length === 1) {
-      return { by: 'structural' as const, note: `only ${el.role} in ${el.frame}` };
-    }
-    const index = sameRole.indexOf(el);
-    if (index >= 0) {
-      return { by: 'structural' as const, note: `${el.role} #${index + 1} of ${sameRole.length} in ${el.frame}` };
-    }
-    return null;
-  }
-
-  // ── resolve(chain) ────────────────────────────────────────
+  // ── resolve(props) — v2: similarity scoring ───────────────
 
   async resolve(chain: Descriptor[]): Promise<ResolveResult> {
-    const rungReports: RungReport[] = [];
-    let hasAmbiguous = false;
+    if (chain.length === 0) return { kind: 'notFound', rungReports: [] };
 
-    for (let i = 0; i < chain.length; i++) {
-      const desc = chain[i];
-      let totalCount = 0;
-      let matchRef: string | null = null;
+    const props = chain[0] as PropertySet;
+    const obs = await this.observe();
 
-      for (const frame of this.allFrames()) {
-        const fname = this.frameName(frame);
-        try {
-          const { count, ref } = await this.resolveRungInFrame(desc, frame, fname);
-          totalCount += count;
-          if (count === 1 && !matchRef) matchRef = ref;
-        } catch {
-          // Frame error — count as 0
+    const result = resolveByScoring(props, obs.elements);
+
+    // Store scoring metadata for telemetry
+    this.lastScoringResult = result.topScore != null
+      ? { topScore: result.topScore, margin: result.margin ?? 0, matchedRole: props.role,
+          candidates: result.candidates?.slice(0, 3).map(c => ({ score: c.score, breakdown: c.breakdown })) }
+      : null;
+
+    if (result.kind === 'match' && result.ref) {
+      // Store a locator for act() — find element by its observed properties
+      const matchedEl = obs.elements.find(e => e.ref === result.ref);
+      if (matchedEl) {
+        const frame = this.findFrame(matchedEl.frame);
+        if (frame) {
+          const locator = await this.buildLocatorForElement(matchedEl, frame);
+          if (locator) {
+            const resolvedRef = `r${this.refCounter++}`;
+            this.elementMap.set(resolvedRef, { frame: matchedEl.frame, locatorDesc: `scored:${result.topScore?.toFixed(2)}` });
+            this.resolvedLocators.set(resolvedRef, locator);
+            return { kind: 'match', ref: resolvedRef, rungIndex: 0 };
+          }
         }
       }
-
-      if (totalCount === 1 && matchRef) {
-        return { kind: 'match', ref: matchRef, rungIndex: i };
-      }
-
-      const reason = totalCount === 0
-        ? 'not found'
-        : `ambiguous (${totalCount} matches)`;
-      if (totalCount > 1) hasAmbiguous = true;
-      rungReports.push({ rungIndex: i, descriptor: desc, count: totalCount, reason });
+      return { kind: 'notFound', rungReports: [] };
     }
 
-    return { kind: hasAmbiguous ? 'ambiguous' : 'notFound', rungReports };
+    if (result.kind === 'ambiguous') {
+      return {
+        kind: 'ambiguous',
+        rungReports: (result.candidates ?? []).map((c, i) => ({
+          rungIndex: i,
+          descriptor: props,
+          count: result.candidates?.length ?? 0,
+          reason: `score=${c.score.toFixed(2)} margin=${result.margin?.toFixed(3)}`,
+        })),
+      };
+    }
+
+    return { kind: 'notFound', rungReports: [] };
   }
 
-  // Map semantic role to Playwright locator — handles textbox specially
-  // (Playwright's getByRole('textbox') misses input[type=password])
-  private roleLocator(container: Locator | Frame, role: string): Locator {
-    if (role === 'textbox') {
-      return container.locator('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]), textarea');
-    }
-    if (role === 'cell' || role === 'columnheader') {
-      return container.locator('td, th');
-    }
-    if ('getByRole' in container && typeof container.getByRole === 'function') {
-      return container.getByRole(role as any);
-    }
-    return (container as Locator).getByRole(role as any);
-  }
+  /** Build a Playwright Locator for a matched element using its observed properties. */
+  private async buildLocatorForElement(el: ElementInfo, frame: Frame): Promise<Locator | null> {
+    try {
+      // Prefer role+name for interactive elements
+      if (el.name && el.role !== 'cell' && el.role !== 'columnheader') {
+        const loc = frame.getByRole(el.role as any, { name: el.name, exact: true });
+        if (await loc.count() === 1) return loc.first();
+      }
 
-  private async resolveRungInFrame(
-    desc: Descriptor, frame: Frame, fname: string,
-  ): Promise<{ count: number; ref: string | null }> {
-    let locator: Locator;
+      // For cells: locate by text content within td/th
+      if ((el.role === 'cell' || el.role === 'columnheader') && el.name) {
+        // Use bounds-based matching for precise identification
+        if (el.bounds) {
+          const idx = await frame.evaluate(({ text, bx, by }) => {
+            const cells = Array.from(document.querySelectorAll('td, th'));
+            for (let i = 0; i < cells.length; i++) {
+              const r = cells[i].getBoundingClientRect();
+              if (Math.abs(r.x - bx) < 2 && Math.abs(r.y - by) < 2) return i;
+            }
+            return -1;
+          }, { text: el.name, bx: el.bounds.x, by: el.bounds.y });
+          if (idx >= 0) return frame.locator('td, th').nth(idx);
+        }
+      }
 
-    switch (desc.by) {
-      case 'roleName': {
-        if (desc.role === 'cell' || desc.role === 'columnheader') {
-          // Playwright's getByRole doesn't match td/th; use locator with text filter
-          locator = frame.locator('td, th').filter({ hasText: desc.name });
-        } else {
-          locator = frame.getByRole(desc.role as any, { name: desc.name, exact: true });
-        }
-        break;
-      }
-      case 'labelProximity': {
-        // Find the exact label text element, go to its closest ancestor TR, find the role within.
-        // Using exact text matching avoids hitting outer layout cells that contain the text as a descendant.
-        const textEl = frame.getByText(desc.anchor, { exact: true });
-        const parentRow = textEl.locator('xpath=ancestor::tr[1]');
-        locator = this.roleLocator(parentRow, desc.role);
-        break;
-      }
-      case 'tableCell': {
-        // Find cells by column header + row text; count matches and get the element
-        const result = await frame.evaluate(({ column, rowContains }) => {
-          const tables = Array.from(document.querySelectorAll('table'));
-          const matches: { tableIdx: number; rowIdx: number; colIdx: number }[] = [];
-          tables.forEach((table, ti) => {
-            const headerRow = table.querySelector('tr');
-            if (!headerRow) return;
-            const headers = Array.from(headerRow.querySelectorAll('th, td'));
-            const colIndex = headers.findIndex(h => h.textContent?.trim() === column);
-            if (colIndex < 0) return;
-            const rows = Array.from(table.querySelectorAll('tr')).slice(1);
-            rows.forEach((row, ri) => {
-              if (!row.textContent?.includes(rowContains)) return;
-              const cells = Array.from(row.querySelectorAll('td, th'));
-              if (cells[colIndex]) matches.push({ tableIdx: ti, rowIdx: ri + 1, colIdx: colIndex });
-            });
-          });
-          return matches;
-        }, { column: desc.column, rowContains: desc.rowContains });
-
-        if (result.length === 1) {
-          const m = result[0];
-          // Build a locator to the matched cell
-          const cellLocator = frame.locator(`table`).nth(m.tableIdx)
-            .locator('tr').nth(m.rowIdx).locator('td, th').nth(m.colIdx);
-          const ref = `r${this.refCounter++}`;
-          this.elementMap.set(ref, { frame: fname, locatorDesc: `tableCell:${desc.column}/${desc.rowContains}` });
-          this.resolvedLocators.set(ref, cellLocator);
-          return { count: 1, ref };
-        }
-        return { count: result.length, ref: null };
-      }
-      case 'anchorRelation': {
-        // Find elements matching 'match' near the 'anchor' text with given 'relation'
-        const containers = frame.locator('tr, div, td').filter({ hasText: desc.anchor });
-        locator = containers.locator(`text=/${desc.match}/i`);
-        break;
-      }
-      case 'structural': {
-        // Parse the note for positional info
-        const match = desc.note.match(/^only (\w+) in (.+)$/);
-        if (match) {
-          locator = this.roleLocator(frame, match[1]);
-          if (this.frameName(frame) !== match[2]) return { count: 0, ref: null };
-        } else {
-          const posMatch = desc.note.match(/^(\w+) #(\d+) of (\d+) in (.+)$/);
-          if (posMatch && this.frameName(frame) === posMatch[4]) {
-            const role = posMatch[1];
-            const idx = parseInt(posMatch[2], 10) - 1;
-            locator = this.roleLocator(frame, role).nth(idx);
-            const total = await this.roleLocator(frame, role).count();
-            if (total === parseInt(posMatch[3], 10)) {
-              const ref = `r${this.refCounter++}`;
-              this.elementMap.set(ref, { frame: this.frameName(frame), locatorDesc: `structural:${desc.note}` });
-              this.resolvedLocators.set(ref, locator);
-              return { count: 1, ref };
-            }
-            return { count: 0, ref: null };
-          }
-          // Pattern: "cell containing <prefix>" — finds LEAF cells whose own text starts with prefix
-          const containsMatch = desc.note.match(/^cell containing (.+)$/);
-          if (containsMatch) {
-            const prefix = containsMatch[1];
-            // Use evaluate to find cells by direct text content (not descendant text)
-            const count = await frame.evaluate((pfx) => {
-              return Array.from(document.querySelectorAll('td, th'))
-                .filter(el => el.children.length === 0 || !el.querySelector('td, th'))
-                .filter(el => (el.textContent?.trim() ?? '').startsWith(pfx))
-                .length;
-            }, prefix);
-            if (count === 1) {
-              locator = frame.locator(`td:text-is("${prefix}"), th:text-is("${prefix}")`);
-              // fallback: use evaluate to get the element
-              const handle = await frame.evaluateHandle((pfx) => {
-                return Array.from(document.querySelectorAll('td, th'))
-                  .filter(el => el.children.length === 0 || !el.querySelector('td, th'))
-                  .find(el => (el.textContent?.trim() ?? '').startsWith(pfx));
-              }, prefix);
-              if (handle) {
-                const ref = `r${this.refCounter++}`;
-                // Convert JSHandle to Locator via page
-                const loc = frame.locator('td, th').filter({ hasText: new RegExp('^' + prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) });
-                this.elementMap.set(ref, { frame: fname, locatorDesc: `structural:${desc.note}` });
-                this.resolvedLocators.set(ref, loc.first());
-                return { count: 1, ref };
-              }
-            }
-            return { count, ref: null };
-          }
-          return { count: 0, ref: null };
-        }
-        break;
-      }
-      case 'geometric': {
-        // Find element at coordinates and store a Locator for act()
-        const geo = desc as Descriptor & { x?: number; y?: number };
-        if (geo.x != null && geo.y != null) {
-          const elInfo = await frame.evaluate(({ x, y }) => {
-            let el = document.elementFromPoint(x, y);
-            if (!el) return null;
-            // Drill to the deepest/smallest element (skip html, body, large containers)
-            while (el.children.length === 1 && el.children[0].getBoundingClientRect().width > 0) {
-              el = el.children[0] as HTMLElement;
-            }
-            const ownText = (el.textContent || '').trim().substring(0, 60);
-            const tag = el.tagName.toLowerCase();
-            // Skip if we landed on html/body (coordinates pointed at empty space)
-            if (tag === 'html' || tag === 'body') return null;
-            return { tag, text: ownText };
-          }, { x: geo.x, y: geo.y });
-          if (elInfo) {
-            const ref = `r${this.refCounter++}`;
-            this.elementMap.set(ref, { frame: fname, locatorDesc: `geometric:${geo.x},${geo.y}` });
-            // Create a locator targeting the element by its text content
-            if (elInfo.text) {
-              const loc = frame.locator(`${elInfo.tag}`).filter({ hasText: elInfo.text }).first();
-              this.resolvedLocators.set(ref, loc);
-            }
-            return { count: 1, ref };
+      // Fallback: textbox by position in frame
+      if (el.role === 'textbox' && el.bounds) {
+        const loc = frame.locator('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]), textarea');
+        const count = await loc.count();
+        for (let i = 0; i < count; i++) {
+          const box = await loc.nth(i).boundingBox();
+          if (box && Math.abs(box.x - el.bounds.x) < 5 && Math.abs(box.y - el.bounds.y) < 5) {
+            return loc.nth(i);
           }
         }
-        return { count: 0, ref: null };
       }
-      default:
-        return { count: 0, ref: null };
-    }
 
-    const count = await locator.count();
-    if (count === 1) {
-      const ref = `r${this.refCounter++}`;
-      this.elementMap.set(ref, { frame: fname, locatorDesc: `${desc.by}:resolved` });
-      this.resolvedLocators.set(ref, locator.first());
-      return { count, ref };
-    }
-    return { count, ref: null };
+      // General fallback: by bounds
+      if (el.bounds) {
+        const selector = el.role === 'button' ? 'button, input[type="submit"], input[type="button"]'
+          : el.role === 'link' ? 'a'
+          : el.role === 'combobox' ? 'select'
+          : el.role === 'checkbox' ? 'input[type="checkbox"]'
+          : 'a, button, input, select, textarea, td, th, [role]';
+        const loc = frame.locator(selector);
+        const count = await loc.count();
+        for (let i = 0; i < count; i++) {
+          const box = await loc.nth(i).boundingBox();
+          if (box && Math.abs(box.x - el.bounds.x) < 5 && Math.abs(box.y - el.bounds.y) < 5) {
+            return loc.nth(i);
+          }
+        }
+      }
+    } catch { /* Locator building failure — return null */ }
+    return null;
   }
 
   private findFrame(fname: string): Frame | null {
@@ -586,6 +490,10 @@ export class BrowserSurface implements Surface {
           const locator = await this.refToLocator(action.ref);
           if (!locator) return { ok: false, error: `ref ${action.ref} not found` };
           await locator.click();
+          // Wait for all frames to settle (framesets: click in nav frame updates content frame)
+          await Promise.all(this.allFrames().map(f =>
+            f.waitForLoadState('domcontentloaded').catch(() => {})
+          ));
           return { ok: true };
         }
         case 'type': {
@@ -599,7 +507,15 @@ export class BrowserSurface implements Surface {
           if (!action.ref) return { ok: false, error: 'select requires a ref' };
           const locator = await this.refToLocator(action.ref);
           if (!locator) return { ok: false, error: `ref ${action.ref} not found` };
-          await locator.selectOption(String(action.value ?? ''));
+          try {
+            await locator.selectOption(String(action.value ?? ''), { timeout: 3000 });
+          } catch (e) {
+            // Fast-fail with available options listed
+            const availableOpts = await locator.evaluate((el: HTMLSelectElement) =>
+              Array.from(el.options).map(o => o.value || o.text).join(', ')
+            ).catch(() => '(could not read options)');
+            return { ok: false, error: `selectOption failed for "${action.value}". Available: [${availableOpts}]` };
+          }
           return { ok: true };
         }
         case 'read': {

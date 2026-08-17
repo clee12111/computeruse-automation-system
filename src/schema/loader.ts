@@ -19,6 +19,14 @@ export function loadArtifact(filePath: string): CapabilityArtifact {
   const raw = readFileSync(filePath, 'utf8');
   const json = JSON.parse(raw);
 
+  // Reject v1 artifacts (schema 1.x — have target.chain instead of target.properties)
+  if (json.steps?.[0]?.target?.chain) {
+    throw new ArtifactValidationError([{
+      path: 'steps[0].target',
+      message: 'Schema 1.x artifact detected (target.chain). Schema 1.x is no longer supported — re-discover the capability to produce a 2.0.0 artifact.',
+    }]);
+  }
+
   // Phase 1: Zod structural validation
   const result = CapabilityArtifactSchema.safeParse(json);
   if (!result.success) {

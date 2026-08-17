@@ -1,0 +1,157 @@
+{
+  "type": "replay_success",
+  "header": {
+    "capability": "lookup-dense-savings",
+    "version": "1.1.0",
+    "app": "vendor-console",
+    "timestamp": "2026-08-16T05:32:31.943Z",
+    "durationMs": 6158
+  },
+  "contract": {
+    "inputs": {
+      "memberId": {
+        "type": "string",
+        "pattern": "^[0-9]{5}$",
+        "sensitive": false
+      },
+      "username": {
+        "type": "string",
+        "sensitive": true
+      },
+      "password": {
+        "type": "string",
+        "sensitive": true
+      }
+    },
+    "outputs": {
+      "savingsBalance": {
+        "type": "money",
+        "sensitive": true
+      }
+    },
+    "businessOutcomes": [
+      "MEMBER_NOT_FOUND"
+    ]
+  },
+  "result": {
+    "status": "SUCCESS",
+    "outputs": {
+      "savingsBalance": 10426.23
+    }
+  },
+  "steps": [
+    {
+      "number": 1,
+      "id": "s1",
+      "intent": "Navigate to /t/cascade-cu/search",
+      "action": "Navigate to `/search`",
+      "target": "navigation in main frame",
+      "identification": "Identified by role \"navigation\" and position only. Fragile: no semantic identifier — fragile.",
+      "proof": "the page must show the text 'Sign In'",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-16T05:32:31.943Z"
+    },
+    {
+      "number": 2,
+      "id": "s2",
+      "intent": "Enter the provided <username> username",
+      "action": "Type {username} into \"Username\"",
+      "target": "textbox (HTML name: f1) near text [Username] in main frame",
+      "identification": "Identified by HTML name \"f1\" + neighbor text [Username]. Robust: HTML name attr (stable across reflows); neighbor text context. Fragile: position (breaks on layout change).",
+      "proof": "the field must contain the typed value",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.31152204836415365,
+      "timing": "2026-08-16T05:32:32.039Z"
+    },
+    {
+      "number": 3,
+      "id": "s3",
+      "intent": "Enter the provided password for <username> login.",
+      "action": "Type {password} into \"Password\"",
+      "target": "textbox (HTML name: f2) near text [Password] in main frame",
+      "identification": "Identified by HTML name \"f2\" + neighbor text [Password]. Robust: HTML name attr (stable across reflows); neighbor text context. Fragile: position (breaks on layout change).",
+      "proof": "the field must contain the typed value",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.31152204836415365,
+      "timing": "2026-08-16T05:32:32.140Z"
+    },
+    {
+      "number": 4,
+      "id": "s4",
+      "intent": "Submit the completed login form to enter the <username> console.",
+      "action": "Click \"Sign In\"",
+      "target": "button named \"Sign In\" in main frame",
+      "identification": "Identified by accessible name \"Sign In\". Robust: accessible name (survives layout changes). Fragile: position (breaks on layout change).",
+      "proof": "the page must show the text 'Dashboard'",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.26935984969909316,
+      "timing": "2026-08-16T05:32:32.209Z"
+    },
+    {
+      "number": 5,
+      "id": "s5",
+      "intent": "Navigate (will trigger session expiry redirect)",
+      "action": "Click \"Member Search\"",
+      "target": "link named \"Member Search\" in main frame",
+      "identification": "Identified by accessible name \"Member Search\". Robust: accessible name (survives layout changes). Fragile: position (breaks on layout change).",
+      "proof": "the page must show the text 'Member Search'",
+      "risk": "safe",
+      "result": "passed",
+      "timing": "2026-08-16T05:32:32.375Z"
+    },
+    {
+      "number": 6,
+      "id": "s6",
+      "intent": "Enter the requested member number for the member search.",
+      "action": "Type {memberId} into \"Member\"",
+      "target": "textbox (HTML name: f1) near text [Member, Number] in main frame",
+      "identification": "Identified by HTML name \"f1\" + neighbor text [Member, Number]. Robust: HTML name attr (stable across reflows); neighbor text context. Fragile: position (breaks on layout change).",
+      "proof": "the field must contain the typed value",
+      "risk": "safe",
+      "result": "recovered",
+      "margin": 0.30895034195658644,
+      "timing": "2026-08-16T05:32:32.401Z",
+      "issues": [
+        "Error \"SESSION_EXPIRED\" detected at this step. The system ran 4 recovery substeps: r1: type → r2: type → r3: click → r4: navigate. Recovery succeeded — the step was retried and passed."
+      ]
+    },
+    {
+      "number": 7,
+      "id": "s7",
+      "intent": "Submit the member search for member <memberId>.",
+      "action": "Click \"Member Search\"",
+      "target": "button named \"Member Search\" in main frame",
+      "identification": "Identified by accessible name \"Member Search\". Robust: accessible name (survives layout changes). Fragile: position (breaks on layout change).",
+      "proof": "business outcome: MEMBER_NOT_FOUND OR the page must show the text 'Member Details'",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.2620065754580336,
+      "timing": "2026-08-16T05:32:37.902Z"
+    },
+    {
+      "number": 8,
+      "id": "s8",
+      "intent": "Read the savings account balance from the accounts table for member <memberId>.",
+      "action": "Read the value in the \"Balance\" column and save as `savingsBalance`",
+      "target": "cell named \"$10,426.23\" in column \"Balance\" near text [00] in accounts frame",
+      "identification": "Identified by accessible name \"$10,426.23\" + column header \"Balance\" + neighbor text [00]. Robust: accessible name (survives layout changes); column header (structural); neighbor text context; scoped to frame \"accounts\". Fragile: position (breaks on layout change).",
+      "proof": "output `savingsBalance` must have a value",
+      "risk": "safe",
+      "result": "passed",
+      "margin": 0.1863349825864299,
+      "timing": "2026-08-16T05:32:38.005Z"
+    }
+  ],
+  "warnings": [],
+  "provenance": {
+    "humanAssisted": false,
+    "humanActions": []
+  },
+  "nextActions": [
+    "Result is ready to use."
+  ]
+}
