@@ -59,7 +59,7 @@ All checks should pass. If "Mock console reachable" fails, make sure
 npm test
 ```
 
-Expects 213 tests passing in ~60 seconds.
+npm test — full suite, offline, no key.
 
 ## 5. Replay a capability
 

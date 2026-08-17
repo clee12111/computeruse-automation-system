@@ -89,7 +89,7 @@ Suggested reading order: an artifact in `capabilities/` → `src/schema/artifact
 ## Tests & evidence
 
 ```bash
-npm test                                          # 212 tests, offline, no key
+npm test                                          # full suite, offline, no key
 docker build -t cuas . && docker run --rm cuas    # same suite, clean room
 ```
 
